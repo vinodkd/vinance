@@ -1,10 +1,76 @@
-import { ipcMain, dialog } from 'electron'
-import { readFileSync } from 'fs'
-import { basename } from 'path'
+import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { readFileSync, existsSync } from 'fs'
+import { basename, join } from 'path'
+import { homedir } from 'os'
 import { parse as parseOfx } from 'ofx-js'
-import { accounts, transactions, categories, rules, imports, reports, budgets } from './db.js'
+import { accounts, transactions, categories, rules, imports, reports, budgets, initDb, getCurrentDbPath } from './db.js'
+import { listPortfolios, addPortfolio, setDefault, removePortfolio, getPortfolioName, touchPortfolio, getDefaultPath } from './portfolios.js'
 
 export function registerIpcHandlers() {
+
+  // ── Portfolios ─────────────────────────────────────────────────────────────
+
+  ipcMain.handle('portfolio:list', () => listPortfolios())
+
+  ipcMain.handle('portfolio:current', () => {
+    const path = getCurrentDbPath()
+    if (!path) return null
+    return { name: getPortfolioName(path) ?? basename(path, '.vinance'), path }
+  })
+
+  ipcMain.handle('portfolio:create', async (_event, { name }) => {
+    const win = BrowserWindow.getFocusedWindow()
+    const { filePath, canceled } = await dialog.showSaveDialog(win, {
+      title: 'Create Portfolio',
+      defaultPath: join(homedir(), `${name}.vinance`),
+      filters: [{ name: 'Vinance Portfolio', extensions: ['vinance'] }]
+    })
+    if (canceled || !filePath) return null
+    await initDb(filePath)
+    const entry = addPortfolio({ name, path: filePath })
+    setDefault(filePath)
+    return entry
+  })
+
+  ipcMain.handle('portfolio:open', async (_event, { path: givenPath } = {}) => {
+    let filePath = givenPath
+    if (!filePath) {
+      const win = BrowserWindow.getFocusedWindow()
+      const { filePaths, canceled } = await dialog.showOpenDialog(win, {
+        title: 'Open Portfolio',
+        filters: [{ name: 'Vinance Portfolio', extensions: ['vinance'] }],
+        properties: ['openFile']
+      })
+      if (canceled || !filePaths.length) return null
+      filePath = filePaths[0]
+    }
+    if (!existsSync(filePath)) throw new Error('File not found: ' + filePath)
+    await initDb(filePath)
+    const name = getPortfolioName(filePath) ?? basename(filePath, '.vinance')
+    const entry = addPortfolio({ name, path: filePath })
+    setDefault(filePath)
+    return entry
+  })
+
+  ipcMain.handle('portfolio:switch', async (_event, { path: filePath }) => {
+    if (!existsSync(filePath)) throw new Error('File not found: ' + filePath)
+    await initDb(filePath)
+    touchPortfolio(filePath)
+    setDefault(filePath)
+    return { name: getPortfolioName(filePath) ?? basename(filePath, '.vinance'), path: filePath }
+  })
+
+  ipcMain.handle('portfolio:set-default', (_event, { path }) => {
+    setDefault(path)
+  })
+
+  ipcMain.handle('portfolio:rename', (_event, { path, name }) => {
+    addPortfolio({ name, path })
+  })
+
+  ipcMain.handle('portfolio:remove', (_event, { path }) => {
+    removePortfolio(path)
+  })
 
   // ── Import ─────────────────────────────────────────────────────────────────
 

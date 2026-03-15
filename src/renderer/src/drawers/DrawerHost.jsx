@@ -2,12 +2,16 @@ import { useDrawer } from '../context/DrawerContext'
 import AddAccountDrawer from './AddAccountDrawer'
 import AddCategoryDrawer from './AddCategoryDrawer'
 import AddRuleDrawer from './AddRuleDrawer'
+import SwitchPortfolioDrawer from './SwitchPortfolioDrawer'
+import TransferMatcherDrawer from './TransferMatcherDrawer'
 
 // Register all drawers here by name
 const DRAWERS = {
-  addAccount:  AddAccountDrawer,
-  addCategory: AddCategoryDrawer,
-  addRule:     AddRuleDrawer,
+  addAccount:       AddAccountDrawer,
+  addCategory:      AddCategoryDrawer,
+  addRule:          AddRuleDrawer,
+  switchPortfolio:  SwitchPortfolioDrawer,
+  transferMatcher:  TransferMatcherDrawer,
 }
 
 export default function DrawerHost() {

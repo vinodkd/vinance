@@ -1,7 +1,9 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
+import { existsSync } from 'fs'
 import { registerIpcHandlers } from './ipc.js'
 import { initDb } from './db.js'
+import { getDefaultPath, listPortfolios, addPortfolio, setDefault } from './portfolios.js'
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -31,8 +33,24 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await initDb()
   registerIpcHandlers()
+
+  // One-time migration: if no portfolios registered but old default DB exists, adopt it
+  const { portfolios } = listPortfolios()
+  if (portfolios.length === 0) {
+    const legacyPath = join(app.getPath('home'), '.vinance', 'vinance.db')
+    if (existsSync(legacyPath)) {
+      addPortfolio({ name: 'Personal', path: legacyPath })
+      setDefault(legacyPath)
+    }
+  }
+
+  // Auto-open default portfolio if it exists on disk
+  const defaultPath = getDefaultPath()
+  if (defaultPath && existsSync(defaultPath)) {
+    await initDb(defaultPath)
+  }
+
   createWindow()
 
   app.on('activate', () => {

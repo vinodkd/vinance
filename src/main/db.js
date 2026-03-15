@@ -7,6 +7,7 @@ import SCHEMA from './schema.sql?raw'
 let db
 let _dbPath
 let _inTransaction = false
+let _SQL = null  // cached sql.js WASM instance
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 
@@ -115,10 +116,10 @@ export async function initDb(dbPath) {
     _dbPath = join(dataDir, 'vinance.db')
   }
 
-  const SQL = await initSqlJs()
+  if (!_SQL) _SQL = await initSqlJs()
   db = existsSync(_dbPath)
-    ? new SQL.Database(readFileSync(_dbPath))
-    : new SQL.Database()
+    ? new _SQL.Database(readFileSync(_dbPath))
+    : new _SQL.Database()
 
   db.run('PRAGMA foreign_keys = ON')
   db.exec(SCHEMA)
@@ -148,6 +149,7 @@ export async function initDb(dbPath) {
 }
 
 export function getDb() { return db }
+export function getCurrentDbPath() { return _dbPath }
 
 // ── Category path CTE ─────────────────────────────────────────────────────────
 // Computes display path (e.g. "Food/Groceries") from parent_id chain at query time.
@@ -429,13 +431,21 @@ export const budgets = {
     }
 
     return prepare(`
-      ${CAT_CTE}
+      ${CAT_CTE},
+      cat_desc(ancestor_id, descendant_id) AS (
+        SELECT id, id FROM categories
+        UNION ALL
+        SELECT cd.ancestor_id, c.id
+        FROM categories c JOIN cat_desc cd ON c.parent_id = cd.descendant_id
+      )
       SELECT b.*, cat_path.path AS category_path,
              COALESCE(SUM(ABS(t.amount)), 0) AS actual
       FROM budgets b
       JOIN cat_path ON cat_path.id = b.category_id
       LEFT JOIN transactions t
-        ON t.category_id = b.category_id
+        ON t.category_id IN (
+          SELECT descendant_id FROM cat_desc WHERE ancestor_id = b.category_id
+        )
         AND t.is_transfer = 0
         AND t.amount < 0
         AND (

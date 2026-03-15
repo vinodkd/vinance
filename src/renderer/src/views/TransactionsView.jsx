@@ -121,16 +121,32 @@ export default function TransactionsView() {
                 <td className={`px-4 py-2 text-right tabular-nums font-medium ${tx.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>
                   {formatCurrency(tx.amount, tx.currency)}
                 </td>
-                <td className="px-4 py-2 whitespace-nowrap">
+                <td className="px-4 py-2 whitespace-nowrap flex gap-2">
                   {!tx.is_transfer && (
+                    <>
+                      <button
+                        onClick={() => openDrawer('addRule', {
+                          prefill: tx.payee || tx.memo || '',
+                          onCreated: load
+                        })}
+                        className="text-xs text-blue-500 hover:text-blue-700 hover:underline"
+                      >
+                        + rule
+                      </button>
+                      <button
+                        onClick={() => openDrawer('transferMatcher', { tx, onLinked: load })}
+                        className="text-xs text-purple-500 hover:text-purple-700 hover:underline"
+                      >
+                        ⇄ transfer
+                      </button>
+                    </>
+                  )}
+                  {tx.is_transfer && (
                     <button
-                      onClick={() => openDrawer('addRule', {
-                        prefill: tx.payee || tx.memo || '',
-                        onCreated: load
-                      })}
-                      className="text-xs text-blue-500 hover:text-blue-700 hover:underline"
+                      onClick={async () => { await window.api.unlinkTransfer(tx.id); load() }}
+                      className="text-xs text-gray-400 hover:text-red-500 hover:underline"
                     >
-                      + rule
+                      unlink
                     </button>
                   )}
                 </td>

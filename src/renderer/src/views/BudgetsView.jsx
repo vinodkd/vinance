@@ -79,11 +79,12 @@ export default function BudgetsView() {
           <option value="monthly">Monthly</option>
           <option value="yearly">Yearly</option>
         </select>
-        <select value={year} onChange={e => setYear(Number(e.target.value))} className="border rounded px-2 py-1.5 text-sm">
-          {[now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
+        <input
+          type="number"
+          value={year}
+          onChange={e => setYear(Number(e.target.value))}
+          className="border rounded px-2 py-1.5 text-sm w-24"
+        />
         {period === 'monthly' && (
           <select value={month} onChange={e => setMonth(Number(e.target.value))} className="border rounded px-2 py-1.5 text-sm">
             {Array.from({length:12},(_,i)=>i+1).map(m => (

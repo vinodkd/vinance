@@ -2,6 +2,16 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 // Expose a safe, typed API to the renderer via window.api
 contextBridge.exposeInMainWorld('api', {
+  // Portfolios
+  listPortfolios:    ()              => ipcRenderer.invoke('portfolio:list'),
+  currentPortfolio:  ()              => ipcRenderer.invoke('portfolio:current'),
+  createPortfolio:   (data)          => ipcRenderer.invoke('portfolio:create', data),
+  openPortfolio:     (data)          => ipcRenderer.invoke('portfolio:open', data),
+  switchPortfolio:   (data)          => ipcRenderer.invoke('portfolio:switch', data),
+  setDefaultPortfolio: (data)        => ipcRenderer.invoke('portfolio:set-default', data),
+  renamePortfolio:   (data)          => ipcRenderer.invoke('portfolio:rename', data),
+  removePortfolio:   (data)          => ipcRenderer.invoke('portfolio:remove', data),
+
   // Import
   openFileDialog:   ()             => ipcRenderer.invoke('import:open-file-dialog'),
   importFile:       (path, acctId) => ipcRenderer.invoke('import:parse-and-store', path, acctId),
