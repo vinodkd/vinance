@@ -9,8 +9,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 CREATE TABLE IF NOT EXISTS categories (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   parent_id   INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-  name        TEXT    NOT NULL,
-  path        TEXT    NOT NULL  -- e.g. "Food/Groceries"
+  name        TEXT    NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS transactions (

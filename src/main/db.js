@@ -106,10 +106,14 @@ function transaction(fn) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-export async function initDb() {
-  const dataDir = join(app.getPath('home'), '.vinance')
-  mkdirSync(dataDir, { recursive: true })
-  _dbPath = join(dataDir, 'vinance.db')
+export async function initDb(dbPath) {
+  if (dbPath) {
+    _dbPath = dbPath
+  } else {
+    const dataDir = join(app.getPath('home'), '.vinance')
+    mkdirSync(dataDir, { recursive: true })
+    _dbPath = join(dataDir, 'vinance.db')
+  }
 
   const SQL = await initSqlJs()
   db = existsSync(_dbPath)
@@ -117,12 +121,56 @@ export async function initDb() {
     : new SQL.Database()
 
   db.run('PRAGMA foreign_keys = ON')
-
   db.exec(SCHEMA)
+
+  // Migration: drop path column from categories (paths now computed via recursive CTE)
+  const colStmt = db.prepare('PRAGMA table_info(categories)')
+  let hasCatPath = false
+  while (colStmt.step()) { if (colStmt.getAsObject().name === 'path') hasCatPath = true }
+  colStmt.free()
+  if (hasCatPath) {
+    db.run('PRAGMA foreign_keys = OFF')
+    db.exec(`
+      CREATE TABLE categories_new (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+        name      TEXT NOT NULL
+      );
+      INSERT INTO categories_new (id, parent_id, name)
+        SELECT id, parent_id, name FROM categories;
+      DROP TABLE categories;
+      ALTER TABLE categories_new RENAME TO categories;
+    `)
+    db.run('PRAGMA foreign_keys = ON')
+  }
+
   persist()
 }
 
 export function getDb() { return db }
+
+// ── Category path CTE ─────────────────────────────────────────────────────────
+// Computes display path (e.g. "Food/Groceries") from parent_id chain at query time.
+
+const CAT_CTE = `
+  WITH RECURSIVE cat_path(id, parent_id, name, path) AS (
+    SELECT id, parent_id, name, name AS path FROM categories WHERE parent_id IS NULL
+    UNION ALL
+    SELECT c.id, c.parent_id, c.name, cat_path.path || '/' || c.name
+    FROM categories c JOIN cat_path ON c.parent_id = cat_path.id
+  )
+`
+
+function categoryDescendantIds(categoryId) {
+  return prepare(`
+    WITH RECURSIVE desc_cats(id) AS (
+      SELECT id FROM categories WHERE id = ?
+      UNION ALL
+      SELECT c.id FROM categories c JOIN desc_cats ON c.parent_id = desc_cats.id
+    )
+    SELECT id FROM desc_cats
+  `).all(categoryId).map(r => r.id)
+}
 
 // ── Accounts ──────────────────────────────────────────────────────────────────
 
@@ -163,21 +211,21 @@ export const transactions = {
     if (dateFrom)   { conditions.push('t.date >= ?');         params.push(dateFrom) }
     if (dateTo)     { conditions.push('t.date <= ?');         params.push(dateTo) }
     if (categoryId) {
-      conditions.push(`t.category_id IN (
-        SELECT c2.id FROM categories c2
-        JOIN categories c1 ON c2.path = c1.path OR c2.path LIKE (c1.path || '/%')
-        WHERE c1.id = ?
-      )`)
-      params.push(categoryId)
+      const ids = categoryDescendantIds(categoryId)
+      if (ids.length) {
+        conditions.push(`t.category_id IN (${ids.map(() => '?').join(',')})`)
+        params.push(...ids)
+      }
     }
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''
     const offset = (page - 1) * limit
 
     const rows = prepare(`
-      SELECT t.*, c.path AS category_path, a.currency
+      ${CAT_CTE}
+      SELECT t.*, cat_path.path AS category_path, a.currency
       FROM transactions t
-      LEFT JOIN categories c ON c.id = t.category_id
+      LEFT JOIN cat_path ON cat_path.id = t.category_id
       LEFT JOIN accounts a ON a.id = t.account_id
       ${where}
       ORDER BY t.date DESC, t.id DESC
@@ -238,35 +286,19 @@ export const transactions = {
 
 export const categories = {
   all() {
-    return prepare('SELECT * FROM categories ORDER BY path').all()
+    return prepare(`
+      ${CAT_CTE}
+      SELECT id, parent_id, name, path FROM cat_path ORDER BY path
+    `).all()
   },
   create({ parentId, name }) {
-    let path = name
-    if (parentId) {
-      const parent = prepare('SELECT path FROM categories WHERE id = ?').get(parentId)
-      if (parent) path = `${parent.path}/${name}`
-    }
     const result = prepare(
-      'INSERT INTO categories (parent_id, name, path) VALUES (?, ?, ?)'
-    ).run(parentId || null, name, path)
+      'INSERT INTO categories (parent_id, name) VALUES (?, ?)'
+    ).run(parentId || null, name)
     return result.lastInsertRowid
   },
   rename(id, name) {
-    const cat = prepare('SELECT * FROM categories WHERE id = ?').get(id)
-    const parentPath = cat.parent_id
-      ? prepare('SELECT path FROM categories WHERE id = ?').get(cat.parent_id)?.path
-      : null
-    const newPath = parentPath ? `${parentPath}/${name}` : name
-    prepare('UPDATE categories SET name = ?, path = ? WHERE id = ?').run(name, newPath, id)
-    // Update paths of all descendants
-    const oldPrefix = cat.path + '/'
-    const newPrefix = newPath + '/'
-    const descendants = prepare("SELECT id, path FROM categories WHERE path LIKE ?").all(oldPrefix + '%')
-    for (const d of descendants) {
-      prepare('UPDATE categories SET path = ? WHERE id = ?').run(
-        d.path.replace(oldPrefix, newPrefix), d.id
-      )
-    }
+    prepare('UPDATE categories SET name = ? WHERE id = ?').run(name, id)
   }
 }
 
@@ -275,9 +307,10 @@ export const categories = {
 export const rules = {
   list() {
     return prepare(`
-      SELECT r.*, c.path AS category_path
+      ${CAT_CTE}
+      SELECT r.*, cat_path.path AS category_path
       FROM rules r
-      JOIN categories c ON c.id = r.category_id
+      JOIN cat_path ON cat_path.id = r.category_id
       ORDER BY r.priority DESC, r.id
     `).all()
   },
@@ -347,18 +380,19 @@ export const reports = {
     const params = [dateFrom, dateTo, ...accountIds]
 
     const rows = prepare(`
+      ${CAT_CTE}
       SELECT
-        c.path   AS category_path,
-        c.id     AS category_id,
+        cat_path.path AS category_path,
+        cat_path.id   AS category_id,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) AS income,
         SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS expense
       FROM transactions t
-      LEFT JOIN categories c ON c.id = t.category_id
+      LEFT JOIN cat_path ON cat_path.id = t.category_id
       WHERE t.is_transfer = 0
         AND t.date BETWEEN ? AND ?
         ${accountFilter}
-      GROUP BY c.id
-      ORDER BY c.path
+      GROUP BY cat_path.id
+      ORDER BY cat_path.path
     `).all(...params)
 
     const byPeriod = prepare(`
@@ -395,10 +429,11 @@ export const budgets = {
     }
 
     return prepare(`
-      SELECT b.*, c.path AS category_path,
+      ${CAT_CTE}
+      SELECT b.*, cat_path.path AS category_path,
              COALESCE(SUM(ABS(t.amount)), 0) AS actual
       FROM budgets b
-      JOIN categories c ON c.id = b.category_id
+      JOIN cat_path ON cat_path.id = b.category_id
       LEFT JOIN transactions t
         ON t.category_id = b.category_id
         AND t.is_transfer = 0
@@ -410,7 +445,7 @@ export const budgets = {
         )
       WHERE ${conditions.join(' AND ')}
       GROUP BY b.id
-      ORDER BY c.path
+      ORDER BY cat_path.path
     `).all(...params)
   },
 
