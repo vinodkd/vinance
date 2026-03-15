@@ -1,0 +1,8 @@
+node_modules/
+out/
+dist/
+.vinance/
+*.db
+*.db-shm
+*.db-wal
+.DS_Store
