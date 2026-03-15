@@ -2,6 +2,11 @@
   "name": "vinance",
   "version": "0.1.0",
   "description": "Local personal finance management",
+  "homepage": "https://github.com/vinodkd/vinance",
+  "author": {
+    "name": "vinodkd",
+    "email": "vinod@vinodkd.org"
+  },
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {

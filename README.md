@@ -19,7 +19,7 @@ A local-only personal finance desktop app. No cloud, no accounts, no subscriptio
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/vinance.git
+git clone https://github.com/vinodkd/vinance.git
 cd vinance
 npm install
 npm run dev
