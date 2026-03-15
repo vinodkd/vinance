@@ -5,6 +5,7 @@ import { useDrawer } from '../context/DrawerContext'
 export default function AccountsView() {
   const [accounts, setAccounts] = useState([])
   const [importing, setImporting] = useState(null)
+  const [renaming, setRenaming] = useState(null) // { id, name }
   const { openDrawer } = useDrawer()
   const navigate = useNavigate()
 
@@ -19,6 +20,13 @@ export default function AccountsView() {
     window.addEventListener('vinance:accounts:changed', load)
     return () => window.removeEventListener('vinance:accounts:changed', load)
   }, [load])
+
+  async function handleRename(id, name) {
+    if (!name.trim()) return
+    await window.api.renameAccount(id, name.trim())
+    setRenaming(null)
+    load()
+  }
 
   async function handleImport(accountId = null) {
     const filePath = await window.api.openFileDialog()
@@ -87,7 +95,25 @@ export default function AccountsView() {
           {accounts.map(acct => (
             <div key={acct.id} className="bg-white rounded-lg border p-4 flex items-center gap-4">
               <div className="flex-1">
-                <div className="font-medium">{acct.name}</div>
+                {renaming?.id === acct.id ? (
+                  <form onSubmit={e => { e.preventDefault(); handleRename(acct.id, renaming.name) }}
+                        className="flex gap-2 items-center">
+                    <input
+                      autoFocus
+                      value={renaming.name}
+                      onChange={e => setRenaming({ ...renaming, name: e.target.value })}
+                      onBlur={() => handleRename(acct.id, renaming.name)}
+                      onKeyDown={e => e.key === 'Escape' && setRenaming(null)}
+                      className="border rounded px-2 py-0.5 text-sm font-medium w-48"
+                    />
+                  </form>
+                ) : (
+                  <div className="font-medium cursor-pointer hover:text-blue-600 group"
+                       onClick={() => setRenaming({ id: acct.id, name: acct.name })}>
+                    {acct.name}
+                    <span className="ml-1 text-xs text-gray-400 opacity-0 group-hover:opacity-100">✎</span>
+                  </div>
+                )}
                 <div className="text-xs text-gray-500 uppercase">{acct.type} · {acct.currency}</div>
               </div>
               <div className={`text-lg font-semibold tabular-nums ${acct.balance < 0 ? 'text-red-600' : 'text-green-700'}`}>
