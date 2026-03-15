@@ -35,17 +35,34 @@ export function registerIpcHandlers() {
     const bankId   = stmt.BANKACCTFROM?.BANKID || ''
     const acctId   = stmt.BANKACCTFROM?.ACCTID || stmt.CCACCTFROM?.ACCTID || ''
 
+    // Derive type implied by the OFX file
+    const ofxType = stmt.CCACCTFROM ? 'credit' : 'checking'
+
     // Create or find account
     let account
     if (accountId) {
       account = accounts.getById(accountId)
+      // Validate currency match
+      if (account.currency !== currency) {
+        throw new Error(
+          `File currency (${currency}) does not match account currency (${account.currency}).`
+        )
+      }
+      // Validate type match (credit vs non-credit)
+      const accountIsCredit = account.type === 'credit'
+      const fileIsCredit    = ofxType === 'credit'
+      if (accountIsCredit !== fileIsCredit) {
+        throw new Error(
+          `File is a ${ofxType} statement but account type is ${account.type}.`
+        )
+      }
     } else {
       account = accounts.findByBankInfo(bankId, acctId)
       if (!account) {
         account = accounts.create({
           name: acctId ? `${bankId} ${acctId}`.trim() : basename(filePath),
           currency,
-          type: stmt.CCACCTFROM ? 'credit' : 'checking'
+          type: ofxType
         })
       }
     }

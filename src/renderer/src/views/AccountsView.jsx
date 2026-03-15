@@ -14,6 +14,12 @@ export default function AccountsView() {
 
   useEffect(() => { load() }, [load])
 
+  // Reload when a new account is created via drawer
+  useEffect(() => {
+    window.addEventListener('vinance:accounts:changed', load)
+    return () => window.removeEventListener('vinance:accounts:changed', load)
+  }, [load])
+
   async function handleImport(accountId = null) {
     const filePath = await window.api.openFileDialog()
     if (!filePath) return
@@ -22,16 +28,30 @@ export default function AccountsView() {
       const result = await window.api.importFile(filePath, accountId)
       alert(`Imported ${result.imported} transactions (${result.skipped} duplicates skipped).`)
       load()
+    } catch (err) {
+      alert(`Import failed: ${err.message}`)
     } finally {
       setImporting(null)
     }
   }
 
+  // Total across all accounts — only meaningful if single currency, so show per-currency totals
+  const totals = accounts.reduce((acc, a) => {
+    acc[a.currency] = (acc[a.currency] || 0) + a.balance
+    return acc
+  }, {})
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Accounts</h1>
+        <h1 className="text-2xl font-bold">Overview</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => openDrawer('addAccount', { onCreated: load })}
+            className="border rounded px-3 py-1.5 text-sm hover:bg-gray-50"
+          >
+            + Account
+          </button>
           <button
             onClick={() => openDrawer('addCategory')}
             className="border rounded px-3 py-1.5 text-sm hover:bg-gray-50"
@@ -49,9 +69,21 @@ export default function AccountsView() {
       </div>
 
       {accounts.length === 0 ? (
-        <p className="text-gray-500 text-sm">No accounts yet. Import an OFX/QFX file to get started.</p>
+        <p className="text-gray-500 text-sm">No accounts yet. Create one or import an OFX/QFX file to get started.</p>
       ) : (
         <div className="grid gap-3">
+          {/* Total row */}
+          <div className="bg-gray-50 rounded-lg border px-4 py-3 flex items-center">
+            <span className="flex-1 text-sm font-medium text-gray-600">Total</span>
+            <div className="flex gap-4">
+              {Object.entries(totals).map(([currency, total]) => (
+                <span key={currency} className={`text-lg font-bold tabular-nums ${total < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                  {formatCurrency(total, currency)}
+                </span>
+              ))}
+            </div>
+          </div>
+
           {accounts.map(acct => (
             <div key={acct.id} className="bg-white rounded-lg border p-4 flex items-center gap-4">
               <div className="flex-1">

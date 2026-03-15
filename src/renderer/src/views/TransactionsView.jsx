@@ -30,16 +30,18 @@ export default function TransactionsView() {
 
   useEffect(() => { load() }, [load])
 
-  const loadCategories = useCallback(() => {
+  function loadCategories() {
     window.api.getCategoryFlat().then(setCategories)
-  }, [])
+  }
 
   useEffect(() => {
     window.api.listAccounts().then(setAccounts)
     loadCategories()
     window.addEventListener('vinance:categories:changed', loadCategories)
     return () => window.removeEventListener('vinance:categories:changed', loadCategories)
-  }, [loadCategories])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
 
   function setParam(key, value) {
     const next = new URLSearchParams(searchParams)

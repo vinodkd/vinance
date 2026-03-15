@@ -162,7 +162,14 @@ export const transactions = {
     if (accountId)  { conditions.push('t.account_id = ?');   params.push(accountId) }
     if (dateFrom)   { conditions.push('t.date >= ?');         params.push(dateFrom) }
     if (dateTo)     { conditions.push('t.date <= ?');         params.push(dateTo) }
-    if (categoryId) { conditions.push('t.category_id = ?');   params.push(categoryId) }
+    if (categoryId) {
+      conditions.push(`t.category_id IN (
+        SELECT c2.id FROM categories c2
+        JOIN categories c1 ON c2.path = c1.path OR c2.path LIKE (c1.path || '/%')
+        WHERE c1.id = ?
+      )`)
+      params.push(categoryId)
+    }
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''
     const offset = (page - 1) * limit

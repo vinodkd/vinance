@@ -1,9 +1,11 @@
 import { useDrawer } from '../context/DrawerContext'
+import AddAccountDrawer from './AddAccountDrawer'
 import AddCategoryDrawer from './AddCategoryDrawer'
 import AddRuleDrawer from './AddRuleDrawer'
 
 // Register all drawers here by name
 const DRAWERS = {
+  addAccount:  AddAccountDrawer,
   addCategory: AddCategoryDrawer,
   addRule:     AddRuleDrawer,
 }

@@ -8,7 +8,7 @@ import {
 const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316']
 
 const now = new Date()
-const DEFAULT_FROM = `${now.getFullYear()}-01-01`
+const DEFAULT_FROM = '2000-01-01'
 const DEFAULT_TO   = `${now.getFullYear()}-12-31`
 
 export default function ReportsView() {
@@ -34,11 +34,10 @@ export default function ReportsView() {
     navigate(`/transactions?dateFrom=${from}&dateTo=${to}`)
   }
 
-  const expenseCategories = summary?.byCategory
+  const expenseCategories = (summary?.byCategory ?? [])
     .filter(c => c.expense < 0)
     .map(c => ({ ...c, expense: Math.abs(c.expense) }))
     .sort((a, b) => b.expense - a.expense)
-    ?? []
 
   return (
     <div>
@@ -48,7 +47,7 @@ export default function ReportsView() {
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="border rounded px-2 py-1.5" />
           <span className="text-gray-400">–</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="border rounded px-2 py-1.5" />
-          <Preset label="This year" from={DEFAULT_FROM} to={DEFAULT_TO} set={[setDateFrom, setDateTo]} />
+          <Preset label="This year" from={`${now.getFullYear()}-01-01`} to={DEFAULT_TO} set={[setDateFrom, setDateTo]} />
           <Preset label="This month"
             from={`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`}
             to={new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10)}

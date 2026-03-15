@@ -9,7 +9,7 @@ import BudgetsView from './views/BudgetsView'
 import CategoriesView from './views/CategoriesView'
 
 const NAV = [
-  { to: '/accounts',     label: 'Accounts' },
+  { to: '/accounts',     label: 'Overview' },
   { to: '/transactions', label: 'Transactions' },
   { to: '/categories',   label: 'Categories' },
   { to: '/rules',        label: 'Rules' },
