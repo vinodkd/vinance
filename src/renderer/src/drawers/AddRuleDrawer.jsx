@@ -27,7 +27,7 @@ export default function AddRuleDrawer({ data, onClose }) {
   async function handleCreateCategory(e) {
     e.preventDefault()
     if (!newCatName.trim()) return
-    const result = await window.api.createCategory({
+    await window.api.createCategory({
       name: newCatName.trim(),
       parentId: newCatParent || null
     })

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { DrawerProvider } from './context/DrawerContext'
 import DrawerHost from './drawers/DrawerHost'
@@ -19,6 +20,17 @@ const NAV = [
 ]
 
 export default function App() {
+  const [portfolioName, setPortfolioName] = useState('')
+
+  useEffect(() => {
+    window.api.currentPortfolio().then(p => {
+      if (p?.name) {
+        setPortfolioName(p.name)
+        document.title = `Vinance — ${p.name}`
+      }
+    })
+  }, [])
+
   return (
     <DrawerProvider>
       <div className="flex h-screen overflow-hidden">
@@ -27,11 +39,15 @@ export default function App() {
           <NavLink
             to="/portfolios"
             className={({ isActive }) =>
-              `px-3 py-2 rounded text-sm font-bold mb-4 ${isActive ? 'bg-gray-600' : 'hover:bg-gray-700'}`
+              `px-3 py-2 rounded text-sm font-bold ${isActive ? 'bg-gray-600' : 'hover:bg-gray-700'}`
             }
           >
-            Vinance
+            <div>Vinance</div>
+            {portfolioName && (
+              <div className="text-xs font-normal text-gray-400 mt-0.5 truncate">{portfolioName}</div>
+            )}
           </NavLink>
+          <div className="mb-3" />
           {NAV.map(({ to, label }) => (
             <NavLink
               key={to}

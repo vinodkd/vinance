@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import { join } from 'path'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 
 function registryPath() {
   return join(app.getPath('home'), '.vinance', 'portfolios.json')

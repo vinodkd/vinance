@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   setDefaultPortfolio: (data)        => ipcRenderer.invoke('portfolio:set-default', data),
   renamePortfolio:   (data)          => ipcRenderer.invoke('portfolio:rename', data),
   removePortfolio:   (data)          => ipcRenderer.invoke('portfolio:remove', data),
+  createDemoPortfolio: (data)        => ipcRenderer.invoke('portfolio:create-demo', data),
 
   // Import
   openFileDialog:   ()             => ipcRenderer.invoke('import:open-file-dialog'),

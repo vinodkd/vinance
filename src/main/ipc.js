@@ -4,7 +4,7 @@ import { basename, join } from 'path'
 import { homedir } from 'os'
 import { parse as parseOfx } from 'ofx-js'
 import { accounts, transactions, categories, rules, imports, reports, budgets, initDb, getCurrentDbPath } from './db.js'
-import { listPortfolios, addPortfolio, setDefault, removePortfolio, getPortfolioName, touchPortfolio, getDefaultPath } from './portfolios.js'
+import { listPortfolios, addPortfolio, setDefault, removePortfolio, getPortfolioName, touchPortfolio } from './portfolios.js'
 
 export function registerIpcHandlers() {
 
@@ -70,6 +70,24 @@ export function registerIpcHandlers() {
 
   ipcMain.handle('portfolio:remove', (_event, { path }) => {
     removePortfolio(path)
+  })
+
+  ipcMain.handle('portfolio:create-demo', async (_event, { path: filePath } = {}) => {
+    if (!filePath) {
+      const win = BrowserWindow.getFocusedWindow()
+      const { filePath: chosen, canceled } = await dialog.showSaveDialog(win, {
+        title: 'Save Demo Portfolio',
+        defaultPath: join(homedir(), 'demo.vinance'),
+        filters: [{ name: 'Vinance Portfolio', extensions: ['vinance'] }]
+      })
+      if (canceled || !chosen) return null
+      filePath = chosen
+    }
+    const { createDemoPortfolio } = await import('./demo.js')
+    const result = await createDemoPortfolio(filePath)
+    const entry = addPortfolio({ name: 'Demo', path: filePath })
+    setDefault(filePath)
+    return { ...result, entry }
   })
 
   // ── Import ─────────────────────────────────────────────────────────────────

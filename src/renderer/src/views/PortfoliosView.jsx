@@ -40,6 +40,17 @@ export default function PortfoliosView() {
     } catch (e) { setError(e.message) }
   }
 
+  async function handleCreateDemo() {
+    setError('')
+    try {
+      const result = await window.api.createDemoPortfolio({ path: null })
+      if (result) {
+        alert(`Demo portfolio created!\n\nTo try the import experience, use "Import" on the Visa Credit Card account and open:\n${result.ofxPath}`)
+        window.location.reload()
+      }
+    } catch (e) { setError(e.message) }
+  }
+
   async function handleOpen() {
     setError('')
     try {
@@ -75,6 +86,10 @@ export default function PortfoliosView() {
               <button onClick={handleOpen}
                 className="border rounded px-3 py-1.5 text-sm hover:bg-gray-50">
                 Open file…
+              </button>
+              <button onClick={handleCreateDemo}
+                className="border border-purple-400 text-purple-700 rounded px-3 py-1.5 text-sm hover:bg-purple-50">
+                Try demo
               </button>
             </>
           )}
