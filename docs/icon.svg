@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#1e40af"/>
+  <!-- V$ text -->
+  <text x="256" y="310" font-family="Arial Black, Arial, sans-serif" font-weight="900"
+        font-size="240" text-anchor="middle" fill="#ffffff" letter-spacing="-8">V$</text>
+</svg>
