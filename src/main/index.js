@@ -1,9 +1,61 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, Menu } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { registerIpcHandlers } from './ipc.js'
 import { initDb } from './db.js'
 import { getDefaultPath, listPortfolios, addPortfolio, setDefault } from './portfolios.js'
+
+function buildMenu(win) {
+  const isMac = process.platform === 'darwin'
+  const isDev = !app.isPackaged
+
+  const template = [
+    // macOS app menu
+    ...(isMac ? [{ role: 'appMenu' }] : []),
+    {
+      label: 'File',
+      submenu: [
+        isMac ? { role: 'close' } : { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' }, { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' }, { role: 'copy' }, { role: 'paste' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+        // Dev tools only in development
+        ...(isDev ? [
+          { type: 'separator' },
+          { role: 'reload' },
+          { role: 'forceReload' },
+          { role: 'toggleDevTools' }
+        ] : [])
+      ]
+    }
+  ]
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+
+  // Also block F12 / Ctrl+Shift+I in production
+  if (!isDev) {
+    win.webContents.on('before-input-event', (_e, input) => {
+      if (input.key === 'F12' ||
+          (input.control && input.shift && input.key === 'I') ||
+          (input.meta    && input.alt   && input.key === 'I')) {
+        _e.preventDefault()
+      }
+    })
+  }
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -30,6 +82,8 @@ function createWindow() {
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  buildMenu(win)
 }
 
 app.whenReady().then(async () => {

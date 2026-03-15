@@ -10,14 +10,15 @@
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
-    "dev":     "electron-vite dev",
-    "build":   "electron-vite build",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "lint":    "eslint src --ext .js,.jsx",
-    "dist":    "npm run build && electron-builder",
-    "dist:mac":   "npm run build && electron-builder --mac",
-    "dist:win":   "npm run build && electron-builder --win",
-    "dist:linux": "npm run build && electron-builder --linux"
+    "lint": "eslint src --ext .js,.jsx",
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
   },
   "build": {
     "appId": "com.vinance.app",
@@ -34,7 +35,7 @@
     "extraResources": [
       {
         "from": "node_modules/sql.js/dist/sql-wasm.wasm",
-        "to":   "sql-wasm.wasm"
+        "to": "sql-wasm.wasm"
       }
     ],
     "directories": {
@@ -45,24 +46,59 @@
       "category": "public.app-category.finance",
       "icon": "build-assets/icon.icns",
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] },
-        { "target": "zip", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ]
     },
     "win": {
       "icon": "build-assets/icon.ico",
       "target": [
-        { "target": "nsis",     "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "linux": {
       "icon": "build-assets/icon.png",
       "category": "Finance",
       "target": [
-        { "target": "AppImage", "arch": ["x64"] },
-        { "target": "deb",      "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
+    },
+    "deb": {
+      "afterInstall": "build-assets/postInstall.sh"
     },
     "nsis": {
       "oneClick": false,
@@ -71,13 +107,20 @@
     },
     "dmg": {
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.0.3",
     "@vitejs/plugin-react": "^4.2.1",
     "electron": "^29.0.0",
     "electron-builder": "^24.13.3",
@@ -90,13 +133,13 @@
   "dependencies": {
     "@headlessui/react": "^2.0.3",
     "autoprefixer": "^10.4.18",
-    "sql.js": "^1.14.1",
     "ofx-js": "^0.2.0",
     "postcss": "^8.4.35",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
     "recharts": "^2.12.2",
+    "sql.js": "^1.14.1",
     "tailwindcss": "^3.4.1"
   }
 }
