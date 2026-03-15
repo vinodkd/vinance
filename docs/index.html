@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vinance — Local-first personal finance</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f9fafb;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+      --green: #059669;
+      --red: #dc2626;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    header {
+      background: #1f2937;
+      color: #fff;
+      padding: 4rem 1.5rem 3rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2.75rem; font-weight: 800; letter-spacing: -0.03em; }
+    header p  { font-size: 1.2rem; color: #9ca3af; margin-top: 0.75rem; max-width: 520px; margin-inline: auto; }
+
+    .badges { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+    .badge {
+      background: #374151; color: #d1d5db; font-size: 0.8rem;
+      padding: 0.25rem 0.75rem; border-radius: 9999px;
+    }
+
+    .cta { margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 0.65rem 1.5rem; border-radius: 0.5rem;
+      font-size: 0.95rem; font-weight: 600; transition: opacity .15s;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-outline { background: transparent; color: #fff; border: 1.5px solid #4b5563; }
+
+    main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+    section { margin-bottom: 3.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text); }
+    h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+
+    /* ── Principles ── */
+    .principles {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;
+    }
+    .principle {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 0.75rem; padding: 1.25rem;
+    }
+    .principle .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .principle p { font-size: 0.9rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* ── Features ── */
+    .features {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;
+    }
+    .feature {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 0.75rem; padding: 1.25rem;
+    }
+    .feature ul { list-style: none; margin-top: 0.5rem; }
+    .feature ul li {
+      font-size: 0.875rem; color: var(--muted); padding: 0.2rem 0;
+      padding-left: 1.1rem; position: relative;
+    }
+    .feature ul li::before {
+      content: "·"; position: absolute; left: 0; color: var(--accent); font-weight: 700;
+    }
+
+    /* ── Getting started ── */
+    .steps { counter-reset: step; display: flex; flex-direction: column; gap: 1rem; }
+    .step {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 0.75rem; padding: 1.25rem 1.25rem 1.25rem 4rem;
+      position: relative;
+    }
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute; left: 1.25rem; top: 1.2rem;
+      background: var(--accent); color: #fff;
+      width: 1.75rem; height: 1.75rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700;
+      line-height: 1.75rem; text-align: center;
+    }
+    .step p { font-size: 0.9rem; color: var(--muted); margin-top: 0.25rem; }
+    pre {
+      background: #1f2937; color: #e5e7eb; border-radius: 0.5rem;
+      padding: 1rem 1.25rem; font-size: 0.85rem; overflow-x: auto;
+      margin-top: 0.75rem; line-height: 1.7;
+    }
+
+    /* ── Workflow ── */
+    .workflow {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 0.75rem; overflow: hidden;
+    }
+    .workflow-row {
+      display: flex; align-items: flex-start; gap: 1rem;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+    }
+    .workflow-row:last-child { border-bottom: none; }
+    .wf-num {
+      background: var(--accent-light); color: var(--accent);
+      font-weight: 700; font-size: 0.8rem; min-width: 1.6rem; height: 1.6rem;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 0.1rem;
+    }
+    .wf-body h3 { font-size: 0.95rem; }
+    .wf-body p  { font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
+
+    /* ── Stack ── */
+    .stack {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .pill {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9999px; padding: 0.3rem 0.85rem;
+      font-size: 0.85rem; color: var(--muted);
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 2rem 1.5rem;
+      border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Vinance</h1>
+  <p>Personal finance that lives entirely on your machine. No cloud, no accounts, no subscriptions.</p>
+  <div class="badges">
+    <span class="badge">Electron</span>
+    <span class="badge">SQLite</span>
+    <span class="badge">OFX / QFX</span>
+    <span class="badge">Local-first</span>
+    <span class="badge">MIT license</span>
+  </div>
+  <div class="cta">
+    <a class="btn btn-primary" href="https://github.com/YOUR_USERNAME/vinance/releases">Download</a>
+    <a class="btn btn-outline" href="https://github.com/YOUR_USERNAME/vinance">View on GitHub</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- Principles -->
+  <section>
+    <h2>Why Vinance?</h2>
+    <div class="principles">
+      <div class="principle">
+        <div class="icon">🔒</div>
+        <h3>Your data, your machine</h3>
+        <p>Everything is stored in a <code>.vinance</code> file you choose. Nothing leaves your computer.</p>
+      </div>
+      <div class="principle">
+        <div class="icon">📂</div>
+        <h3>Multiple portfolios</h3>
+        <p>Separate files for personal, business, or family finances. Switch instantly without restarting.</p>
+      </div>
+      <div class="principle">
+        <div class="icon">🏦</div>
+        <h3>Works with your bank</h3>
+        <p>Import OFX/QFX files exported from virtually any bank or credit union. Re-import safely — duplicates are skipped.</p>
+      </div>
+      <div class="principle">
+        <div class="icon">⚡</div>
+        <h3>Fast and offline</h3>
+        <p>SQLite database, no network calls, no loading spinners. Works on a plane.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <h2>Features</h2>
+    <div class="features">
+      <div class="feature">
+        <h3>Accounts &amp; Imports</h3>
+        <ul>
+          <li>Create accounts with type and currency</li>
+          <li>Import OFX / QFX files from any bank</li>
+          <li>Duplicate detection via FITID</li>
+          <li>Multi-currency support</li>
+          <li>Total balance across all accounts</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Categorisation</h3>
+        <ul>
+          <li>Hierarchical categories (unlimited depth)</li>
+          <li>Rule-based auto-categorisation on import</li>
+          <li>Match by payee or memo (substring or regex)</li>
+          <li>Priority ordering for overlapping rules</li>
+          <li>Re-apply all rules at any time</li>
+          <li>Manual override per transaction</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Transfers</h3>
+        <ul>
+          <li>Link debit/credit pairs across accounts</li>
+          <li>App finds the best match automatically</li>
+          <li>Transfers excluded from income/expense totals</li>
+          <li>Unlink with one click</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Reports</h3>
+        <ul>
+          <li>Income vs expense bar chart by month</li>
+          <li>Expense breakdown pie chart by category</li>
+          <li>Custom date range with presets</li>
+          <li>Click any chart element to drill into transactions</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Budgets</h3>
+        <ul>
+          <li>Monthly or yearly budgets per category</li>
+          <li>Actual spend rolls up from child categories</li>
+          <li>Budget vs actual bar chart</li>
+          <li>Variance column (green = under, red = over)</li>
+          <li>Drill down to matching transactions</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Portfolios</h3>
+        <ul>
+          <li>Named portfolios backed by <code>.vinance</code> files</li>
+          <li>Create or open from any location</li>
+          <li>Set a default (auto-opened on launch)</li>
+          <li>Hot-switch without restarting the app</li>
+          <li>Recent portfolio list with last-opened time</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Getting started -->
+  <section>
+    <h2>Getting started</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>Install</h3>
+        <p>Download the latest release for your OS from the <a href="https://github.com/YOUR_USERNAME/vinance/releases">Releases page</a>, or run from source:</p>
+        <pre>git clone https://github.com/YOUR_USERNAME/vinance.git
+cd vinance
+npm install
+npm run dev</pre>
+      </div>
+      <div class="step">
+        <h3>Create a portfolio</h3>
+        <p>On first launch you land on the Portfolios page. Click <strong>+ New</strong>, give it a name (e.g. "Personal"), and choose where to save the <code>.vinance</code> file.</p>
+      </div>
+      <div class="step">
+        <h3>Import your bank data</h3>
+        <p>Go to <strong>Overview</strong> and click <strong>Import OFX/QFX</strong>. Most online banking portals let you export OFX or QFX files under "Download transactions" or "Export". Re-importing the same file is safe — duplicates are skipped automatically.</p>
+      </div>
+      <div class="step">
+        <h3>Set up categories and rules</h3>
+        <p>Go to <strong>Categories</strong> and create a hierarchy that matches your life (e.g. Food → Groceries, Food → Dining Out). Then go to <strong>Rules</strong> and create patterns to auto-assign categories. Hit <strong>Re-apply all rules</strong> to categorise existing transactions in one go.</p>
+      </div>
+      <div class="step">
+        <h3>Link transfers</h3>
+        <p>In <strong>Transactions</strong>, find a transaction that moved money between your accounts (e.g. a savings deposit). Click <strong>⇄ transfer</strong>, select the other account, and confirm the match Vinance found. Linked transfers are excluded from reports so they don't inflate your income or expenses.</p>
+      </div>
+      <div class="step">
+        <h3>Explore reports and budgets</h3>
+        <p>Head to <strong>Reports</strong> for income/expense charts. Click any bar or pie slice to drill into the underlying transactions. In <strong>Budgets</strong>, set a spending target per category and track variance over time.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Typical workflow -->
+  <section>
+    <h2>Typical monthly workflow</h2>
+    <div class="workflow">
+      <div class="workflow-row">
+        <div class="wf-num">1</div>
+        <div class="wf-body">
+          <h3>Download OFX/QFX from your bank</h3>
+          <p>Export the last month of transactions from each account.</p>
+        </div>
+      </div>
+      <div class="workflow-row">
+        <div class="wf-num">2</div>
+        <div class="wf-body">
+          <h3>Import into Vinance</h3>
+          <p>Click <strong>Import more</strong> on each account. Rules run automatically; new categories apply instantly.</p>
+        </div>
+      </div>
+      <div class="workflow-row">
+        <div class="wf-num">3</div>
+        <div class="wf-body">
+          <h3>Review uncategorised transactions</h3>
+          <p>Filter by "Uncategorized" in Transactions, assign categories, and add new rules for recurring payees.</p>
+        </div>
+      </div>
+      <div class="workflow-row">
+        <div class="wf-num">4</div>
+        <div class="wf-body">
+          <h3>Link any transfers</h3>
+          <p>Mark savings deposits, loan payments, or account top-ups as transfers so they don't skew your reports.</p>
+        </div>
+      </div>
+      <div class="workflow-row">
+        <div class="wf-num">5</div>
+        <div class="wf-body">
+          <h3>Check reports and budgets</h3>
+          <p>See where you're over or under budget, drill into categories that look unusual.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech stack -->
+  <section>
+    <h2>Tech stack</h2>
+    <div class="stack">
+      <span class="pill">Electron</span>
+      <span class="pill">React 18</span>
+      <span class="pill">Vite</span>
+      <span class="pill">sql.js (SQLite / WASM)</span>
+      <span class="pill">Recharts</span>
+      <span class="pill">Tailwind CSS</span>
+      <span class="pill">React Router v6</span>
+      <span class="pill">ofx-js</span>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Vinance is open source under the MIT license.
+  Built with <a href="https://claude.ai/code">Claude Code</a>.
+</footer>
+
+</body>
+</html>

@@ -4,6 +4,15 @@ import { join } from 'path'
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from 'fs'
 import SCHEMA from './schema.sql?raw'
 
+// In a packaged app the WASM file is unpacked into process.resourcesPath.
+// In dev it lives inside node_modules/sql.js/dist.
+function sqlJsConfig() {
+  if (app.isPackaged) {
+    return { locateFile: () => join(process.resourcesPath, 'sql-wasm.wasm') }
+  }
+  return {}
+}
+
 let db
 let _dbPath
 let _inTransaction = false
@@ -116,7 +125,7 @@ export async function initDb(dbPath) {
     _dbPath = join(dataDir, 'vinance.db')
   }
 
-  if (!_SQL) _SQL = await initSqlJs()
+  if (!_SQL) _SQL = await initSqlJs(sqlJsConfig())
   db = existsSync(_dbPath)
     ? new _SQL.Database(readFileSync(_dbPath))
     : new _SQL.Database()
