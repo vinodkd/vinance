@@ -92,7 +92,7 @@ export default function TransactionsView() {
             <tr>
               <th className="text-left px-4 py-2 font-medium text-gray-600 w-28">Date</th>
               <th className="text-left px-4 py-2 font-medium text-gray-600">Payee</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600 hidden lg:table-cell">Memo</th>
+              <th className="text-left px-4 py-2 font-medium text-gray-600">Memo</th>
               <th className="text-left px-4 py-2 font-medium text-gray-600">Category</th>
               <th className="text-right px-4 py-2 font-medium text-gray-600 w-32">Amount</th>
               <th className="px-4 py-2 w-8"></th>
@@ -103,7 +103,7 @@ export default function TransactionsView() {
               <tr key={tx.id} className={`hover:bg-gray-50 ${tx.is_transfer ? 'opacity-50' : ''}`}>
                 <td className="px-4 py-2 text-gray-500 tabular-nums">{tx.date}</td>
                 <td className="px-4 py-2 font-medium">{tx.payee || '—'}</td>
-                <td className="px-4 py-2 text-gray-500 hidden lg:table-cell">{tx.memo || ''}</td>
+                <td className="px-4 py-2 text-gray-500">{tx.memo || ''}</td>
                 <td className="px-4 py-2">
                   {tx.is_transfer ? (
                     <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Transfer</span>

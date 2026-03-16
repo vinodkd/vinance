@@ -181,7 +181,8 @@ export function registerIpcHandlers() {
 
   ipcMain.handle('accounts:list',   () => accounts.list())
   ipcMain.handle('accounts:create', (_e, data) => accounts.create(data))
-  ipcMain.handle('accounts:rename', (_e, id, name) => accounts.rename(id, name))
+  ipcMain.handle('accounts:rename',  (_e, id, name) => accounts.rename(id, name))
+  ipcMain.handle('accounts:delete',  (_e, id) => accounts.delete(id))
 
   // ── Transactions ───────────────────────────────────────────────────────────
 

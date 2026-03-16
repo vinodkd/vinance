@@ -208,6 +208,11 @@ export const accounts = {
   },
   findByBankInfo(bankId, acctId) {
     return prepare("SELECT * FROM accounts WHERE name LIKE ? LIMIT 1").get(`%${acctId}%`)
+  },
+  delete(id) {
+    prepare('DELETE FROM imports      WHERE account_id = ?').run(id)
+    prepare('DELETE FROM transactions WHERE account_id = ?').run(id)
+    prepare('DELETE FROM accounts     WHERE id = ?').run(id)
   }
 }
 
