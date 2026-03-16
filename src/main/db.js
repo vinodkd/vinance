@@ -272,7 +272,7 @@ export const accounts = {
 // ── Transactions ──────────────────────────────────────────────────────────────
 
 export const transactions = {
-  list({ accountId, page = 1, limit = 50, dateFrom, dateTo, categoryId, search } = {}) {
+  list({ accountId, page = 1, limit = 50, dateFrom, dateTo, categoryId, search, uncategorized } = {}) {
     const conditions = []
     const params = []
 
@@ -282,6 +282,9 @@ export const transactions = {
     if (search) {
       conditions.push('(t.payee LIKE ? OR t.memo LIKE ?)')
       params.push(`%${search}%`, `%${search}%`)
+    }
+    if (uncategorized) {
+      conditions.push('t.category_id IS NULL AND t.is_transfer = 0')
     }
     if (categoryId) {
       const ids = categoryDescendantIds(categoryId)

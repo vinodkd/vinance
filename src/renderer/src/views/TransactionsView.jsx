@@ -15,8 +15,9 @@ export default function TransactionsView() {
   const categoryId = searchParams.get('categoryId') || ''
   const dateFrom   = searchParams.get('dateFrom') || ''
   const dateTo     = searchParams.get('dateTo') || ''
-  const search     = searchParams.get('search') || ''
-  const page       = Number(searchParams.get('page') || 1)
+  const search        = searchParams.get('search') || ''
+  const uncategorized = searchParams.get('uncategorized') === '1'
+  const page          = Number(searchParams.get('page') || 1)
   const searchRef  = useRef(null)
 
   const load = useCallback(() => {
@@ -25,11 +26,12 @@ export default function TransactionsView() {
       categoryId: categoryId ? Number(categoryId) : undefined,
       dateFrom:   dateFrom || undefined,
       dateTo:     dateTo   || undefined,
-      search:     search   || undefined,
+      search:        search        || undefined,
+      uncategorized: uncategorized || undefined,
       page,
       limit: PAGE_SIZE
     }).then(setData)
-  }, [accountId, categoryId, dateFrom, dateTo, search, page])
+  }, [accountId, categoryId, dateFrom, dateTo, search, uncategorized, page])
 
   useEffect(() => { load() }, [load])
 
@@ -99,8 +101,12 @@ export default function TransactionsView() {
           <option value="">All accounts</option>
           {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
-        <select value={categoryId} onChange={e => setParam('categoryId', e.target.value)} className="border rounded px-2 py-1.5">
+        <select value={uncategorized ? 'uncategorized' : categoryId} onChange={e => {
+          if (e.target.value === 'uncategorized') { setParam('categoryId', ''); setParam('uncategorized', '1') }
+          else { setParam('uncategorized', ''); setParam('categoryId', e.target.value) }
+        }} className="border rounded px-2 py-1.5">
           <option value="">All categories</option>
+          <option value="uncategorized">Uncategorized</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.path}</option>)}
         </select>
         <input type="date" value={dateFrom} onChange={e => setParam('dateFrom', e.target.value)} className="border rounded px-2 py-1.5" />
