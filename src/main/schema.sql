@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE TABLE IF NOT EXISTS transactions (
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
   account_id       INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-  fitid            TEXT    NOT NULL,
+  fitid            TEXT,               -- NULL for synthetic mirror transactions
   date             TEXT    NOT NULL,  -- ISO 8601 YYYY-MM-DD
   amount           REAL    NOT NULL,
   payee            TEXT,

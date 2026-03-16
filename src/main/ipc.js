@@ -169,6 +169,7 @@ export function registerIpcHandlers() {
 
     // Auto-reconcile any pending transfers pointing at this account
     const reconciled = transactions.reconcilePendingTransfers(account.id)
+      + transactions.reconcileSyntheticMirrors(account.id)
 
     imports.log({
       accountId: account.id,
@@ -194,6 +195,7 @@ export function registerIpcHandlers() {
   ipcMain.handle('transfers:link',            (_e, id1, id2) => transactions.linkTransfer(id1, id2))
   ipcMain.handle('transfers:unlink',          (_e, id) => transactions.unlinkTransfer(id))
   ipcMain.handle('transfers:mark-pending',    (_e, id, accountId) => transactions.markPendingTransfer(id, accountId))
+  ipcMain.handle('transfers:create-mirror',   (_e, id, accountId) => transactions.createMirrorTransfer(id, accountId))
 
   // ── Categories ─────────────────────────────────────────────────────────────
 

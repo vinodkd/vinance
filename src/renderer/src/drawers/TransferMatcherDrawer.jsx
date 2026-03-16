@@ -82,6 +82,12 @@ export default function TransferMatcherDrawer({ data, onClose }) {
     onClose()
   }
 
+  async function handleMirror() {
+    await window.api.createMirrorTransfer(tx.id, Number(targetAcct))
+    onLinked?.()
+    onClose()
+  }
+
   return (
     <div className="p-6 flex flex-col gap-4">
       <h2 className="text-lg font-semibold">Mark as Transfer</h2>
@@ -171,10 +177,16 @@ export default function TransferMatcherDrawer({ data, onClose }) {
             </button>
           )}
           <button
+            onClick={handleMirror}
+            className="bg-green-600 text-white rounded py-2 text-sm font-medium hover:bg-green-700"
+          >
+            Transfer anyway (create counterpart in other account)
+          </button>
+          <button
             onClick={handleMarkPending}
             className="border border-amber-400 text-amber-700 rounded py-2 text-sm hover:bg-amber-50"
           >
-            {match ? 'Mark as pending instead (reconcile on next import)' : 'No match yet — mark as pending transfer'}
+            {match ? 'Mark as pending instead (reconcile on next import)' : 'Mark as pending (reconcile on next import)'}
           </button>
           <button onClick={onClose} className="border rounded py-2 text-sm hover:bg-gray-50">Cancel</button>
         </div>

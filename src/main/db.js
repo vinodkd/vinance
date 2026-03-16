@@ -163,6 +163,50 @@ export async function initDb(dbPath) {
     db.run('ALTER TABLE transactions ADD COLUMN transfer_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL')
   }
 
+  // Migration: make fitid nullable to allow synthetic mirror transactions
+  // SQLite can't ALTER COLUMN, so we recreate the table if the old NOT NULL constraint exists.
+  const fitidInfo = (() => {
+    const s = db.prepare('PRAGMA table_info(transactions)')
+    const cols = []
+    while (s.step()) cols.push(s.getAsObject())
+    s.free()
+    return cols.find(c => c.name === 'fitid')
+  })()
+  if (fitidInfo && fitidInfo.notnull === 1) {
+    db.run('PRAGMA foreign_keys = OFF')
+    db.run(`
+      CREATE TABLE transactions_new (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id       INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        fitid            TEXT,
+        date             TEXT    NOT NULL,
+        amount           REAL    NOT NULL,
+        payee            TEXT,
+        memo             TEXT,
+        raw_type         TEXT,
+        category_id      INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+        is_transfer         INTEGER NOT NULL DEFAULT 0,
+        transfer_pair_id    INTEGER REFERENCES transactions_new(id) ON DELETE SET NULL,
+        transfer_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+        imported_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (account_id, fitid)
+      )
+    `)
+    db.run(`
+      INSERT INTO transactions_new
+        (id, account_id, fitid, date, amount, payee, memo, raw_type,
+         category_id, is_transfer, transfer_pair_id, transfer_account_id, imported_at)
+      SELECT
+        id, account_id, fitid, date, amount, payee, memo, raw_type,
+        category_id, is_transfer, transfer_pair_id, transfer_account_id,
+        COALESCE(imported_at, datetime('now'))
+      FROM transactions
+    `)
+    db.run(`DROP TABLE transactions`)
+    db.run(`ALTER TABLE transactions_new RENAME TO transactions`)
+    db.run('PRAGMA foreign_keys = ON')
+  }
+
   persist()
 }
 
@@ -310,6 +354,59 @@ export const transactions = {
     prepare(
       'UPDATE transactions SET is_transfer = 1, transfer_pair_id = NULL, transfer_account_id = ? WHERE id = ?'
     ).run(accountId, id)
+  },
+
+  // Creates a synthetic mirror transaction in the target account and links both sides immediately.
+  // The mirror has no fitid so it can be upgraded to a real imported transaction later.
+  createMirrorTransfer(sourceId, targetAccountId) {
+    const src = prepare('SELECT * FROM transactions WHERE id = ?').get(sourceId)
+    if (!src) throw new Error('Source transaction not found')
+    transaction(() => {
+      prepare(`
+        INSERT INTO transactions (account_id, date, amount, payee, memo, is_transfer, transfer_pair_id)
+        VALUES (?, ?, ?, ?, ?, 1, ?)
+      `).run(targetAccountId, src.date, -src.amount, src.payee, src.memo, sourceId)
+      const mirrorId = lastInsertRowid()
+      prepare('UPDATE transactions SET is_transfer = 1, transfer_pair_id = ?, transfer_account_id = NULL WHERE id = ?')
+        .run(mirrorId, sourceId)
+    })()
+  },
+
+  // Called after import — upgrades any synthetic mirrors (fitid IS NULL) in this account
+  // to their real imported counterparts, then re-links the source transaction.
+  reconcileSyntheticMirrors(accountId) {
+    const synthetics = prepare(`
+      SELECT * FROM transactions
+      WHERE account_id = ? AND fitid IS NULL AND is_transfer = 1 AND transfer_pair_id IS NOT NULL
+    `).all(accountId)
+
+    let upgraded = 0
+    for (const s of synthetics) {
+      const real = prepare(`
+        SELECT * FROM transactions
+        WHERE account_id = ?
+          AND amount = ?
+          AND fitid IS NOT NULL
+          AND is_transfer = 0
+          AND ABS(JULIANDAY(date) - JULIANDAY(?)) <= 5
+        ORDER BY ABS(JULIANDAY(date) - JULIANDAY(?))
+        LIMIT 1
+      `).get(accountId, s.amount, s.date, s.date)
+
+      if (real) {
+        transaction(() => {
+          // Re-link source → real, mark real as transfer
+          prepare('UPDATE transactions SET transfer_pair_id = ?, transfer_account_id = NULL WHERE id = ?')
+            .run(real.id, s.transfer_pair_id)
+          prepare('UPDATE transactions SET is_transfer = 1, transfer_pair_id = ? WHERE id = ?')
+            .run(s.transfer_pair_id, real.id)
+          // Delete the synthetic mirror
+          prepare('DELETE FROM transactions WHERE id = ?').run(s.id)
+        })()
+        upgraded++
+      }
+    }
+    return upgraded
   },
 
   // Called after import — tries to link pending transfers with newly imported transactions
