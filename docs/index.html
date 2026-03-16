@@ -214,7 +214,8 @@
           <li>Import OFX / QFX files from any bank</li>
           <li>Duplicate detection via FITID</li>
           <li>Multi-currency support</li>
-          <li>Total balance across all accounts</li>
+          <li>Group accounts into collapsible sections with subtotals</li>
+          <li>Inline rename accounts and groups</li>
         </ul>
       </div>
       <div class="feature">
@@ -222,10 +223,11 @@
         <ul>
           <li>Hierarchical categories (unlimited depth)</li>
           <li>Rule-based auto-categorisation on import</li>
-          <li>Match by payee or memo (substring or regex)</li>
+          <li>Match by payee, memo, or either (substring or regex)</li>
+          <li>Edit existing rules inline</li>
           <li>Priority ordering for overlapping rules</li>
           <li>Re-apply all rules at any time</li>
-          <li>Manual override per transaction</li>
+          <li>Filter transactions to uncategorized only</li>
         </ul>
       </div>
       <div class="feature">
@@ -233,6 +235,8 @@
         <ul>
           <li>Link debit/credit pairs across accounts</li>
           <li>App finds the best match automatically</li>
+          <li>"Transfer anyway" creates a synthetic counterpart — upgraded automatically when you import the other account later</li>
+          <li>Mark as pending and auto-reconcile on next import</li>
           <li>Transfers excluded from income/expense totals</li>
           <li>Unlink with one click</li>
         </ul>
@@ -241,7 +245,8 @@
         <h3>Reports</h3>
         <ul>
           <li>Income vs expense bar chart by month</li>
-          <li>Expense breakdown pie chart by category</li>
+          <li>Expense pie chart with hierarchical drill-down by category level</li>
+          <li>Breadcrumb navigation back up the category tree</li>
           <li>Custom date range with presets</li>
           <li>Click any chart element to drill into transactions</li>
         </ul>
@@ -326,7 +331,7 @@ npm run dev</pre>
         <div class="wf-num">3</div>
         <div class="wf-body">
           <h3>Review uncategorised transactions</h3>
-          <p>Filter by "Uncategorized" in Transactions, assign categories, and add new rules for recurring payees.</p>
+          <p>Use the <strong>Uncategorized</strong> option in the category filter (or search with Ctrl+F), assign categories, and add new rules for recurring payees.</p>
         </div>
       </div>
       <div class="workflow-row">
