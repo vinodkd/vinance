@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useDrawer } from '../context/DrawerContext'
 
@@ -15,7 +15,9 @@ export default function TransactionsView() {
   const categoryId = searchParams.get('categoryId') || ''
   const dateFrom   = searchParams.get('dateFrom') || ''
   const dateTo     = searchParams.get('dateTo') || ''
+  const search     = searchParams.get('search') || ''
   const page       = Number(searchParams.get('page') || 1)
+  const searchRef  = useRef(null)
 
   const load = useCallback(() => {
     window.api.listTransactions({
@@ -23,10 +25,11 @@ export default function TransactionsView() {
       categoryId: categoryId ? Number(categoryId) : undefined,
       dateFrom:   dateFrom || undefined,
       dateTo:     dateTo   || undefined,
+      search:     search   || undefined,
       page,
       limit: PAGE_SIZE
     }).then(setData)
-  }, [accountId, categoryId, dateFrom, dateTo, page])
+  }, [accountId, categoryId, dateFrom, dateTo, search, page])
 
   useEffect(() => { load() }, [load])
 
@@ -40,6 +43,18 @@ export default function TransactionsView() {
     window.addEventListener('vinance:categories:changed', loadCategories)
     return () => window.removeEventListener('vinance:categories:changed', loadCategories)
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    function onKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
 
@@ -72,6 +87,14 @@ export default function TransactionsView() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4 text-sm">
+        <input
+          ref={searchRef}
+          type="search"
+          value={search}
+          onChange={e => setParam('search', e.target.value)}
+          placeholder="Search payee / memo… (Ctrl+F)"
+          className="border rounded px-2 py-1.5 min-w-48"
+        />
         <select value={accountId} onChange={e => setParam('accountId', e.target.value)} className="border rounded px-2 py-1.5">
           <option value="">All accounts</option>
           {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}

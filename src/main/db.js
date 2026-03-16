@@ -272,13 +272,17 @@ export const accounts = {
 // ── Transactions ──────────────────────────────────────────────────────────────
 
 export const transactions = {
-  list({ accountId, page = 1, limit = 50, dateFrom, dateTo, categoryId } = {}) {
+  list({ accountId, page = 1, limit = 50, dateFrom, dateTo, categoryId, search } = {}) {
     const conditions = []
     const params = []
 
     if (accountId)  { conditions.push('t.account_id = ?');   params.push(accountId) }
     if (dateFrom)   { conditions.push('t.date >= ?');         params.push(dateFrom) }
     if (dateTo)     { conditions.push('t.date <= ?');         params.push(dateTo) }
+    if (search) {
+      conditions.push('(t.payee LIKE ? OR t.memo LIKE ?)')
+      params.push(`%${search}%`, `%${search}%`)
+    }
     if (categoryId) {
       const ids = categoryDescendantIds(categoryId)
       if (ids.length) {
