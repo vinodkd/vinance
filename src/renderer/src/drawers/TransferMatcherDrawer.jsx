@@ -1,18 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 export default function TransferMatcherDrawer({ data, onClose }) {
   const { tx, onLinked } = data
-  const [accounts,   setAccounts]   = useState([])
-  const [targetAcct, setTargetAcct] = useState('')
-  const [match,      setMatch]      = useState(null)   // best candidate
-  const [loading,    setLoading]    = useState(false)
-  const [error,      setError]      = useState('')
+  const [accounts,    setAccounts]    = useState([])
+  const [targetAcct,  setTargetAcct]  = useState('')
+  const [match,       setMatch]       = useState(null)
+  const [loading,     setLoading]     = useState(false)
+  const [error,       setError]       = useState('')
+  const [addingAcct,  setAddingAcct]  = useState(false)
+  const [newName,     setNewName]     = useState('')
+  const [newType,     setNewType]     = useState('checking')
+  const [newCurrency, setNewCurrency] = useState('USD')
 
-  useEffect(() => {
+  const loadAccounts = useCallback(() =>
     window.api.listAccounts().then(accts =>
       setAccounts(accts.filter(a => a.id !== tx.account_id))
     )
-  }, [tx.account_id])
+  , [tx.account_id])
+
+  useEffect(() => { loadAccounts() }, [loadAccounts])
+
+  async function handleCreateAccount(e) {
+    e.preventDefault()
+    if (!newName.trim()) return
+    const created = await window.api.createAccount({ name: newName.trim(), type: newType, currency: newCurrency })
+    await loadAccounts()
+    setTargetAcct(String(created.id))
+    setNewName(''); setNewType('checking'); setNewCurrency('USD')
+    setAddingAcct(false)
+    window.dispatchEvent(new CustomEvent('vinance:accounts:changed'))
+  }
 
   useEffect(() => {
     if (!targetAcct) { setMatch(null); return }
@@ -66,8 +83,16 @@ export default function TransferMatcherDrawer({ data, onClose }) {
         </div>
       </div>
 
-      <label className="flex flex-col gap-1 text-sm">
-        Other account
+      <div className="flex flex-col gap-1 text-sm">
+        <div className="flex items-center justify-between">
+          <span>Other account</span>
+          {!addingAcct && (
+            <button type="button" onClick={() => setAddingAcct(true)}
+              className="text-blue-500 hover:text-blue-700 text-xs hover:underline">
+              + New account
+            </button>
+          )}
+        </div>
         <select
           value={targetAcct}
           onChange={e => setTargetAcct(e.target.value)}
@@ -77,7 +102,36 @@ export default function TransferMatcherDrawer({ data, onClose }) {
           <option value="">— Select account —</option>
           {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
-      </label>
+
+        {addingAcct && (
+          <form onSubmit={handleCreateAccount}
+                className="border rounded p-3 bg-gray-50 flex flex-col gap-2 mt-1">
+            <span className="text-xs font-medium text-gray-600">New account</span>
+            <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
+              placeholder="Account name" className="border rounded px-2 py-1.5 text-sm" />
+            <select value={newType} onChange={e => setNewType(e.target.value)}
+              className="border rounded px-2 py-1.5 text-sm">
+              <option value="checking">Checking</option>
+              <option value="savings">Savings</option>
+              <option value="credit">Credit</option>
+            </select>
+            <input value={newCurrency} onChange={e => setNewCurrency(e.target.value.toUpperCase())}
+              placeholder="Currency (e.g. USD)" maxLength={3}
+              className="border rounded px-2 py-1.5 text-sm font-mono uppercase" />
+            <div className="flex gap-2">
+              <button type="submit"
+                className="flex-1 bg-blue-600 text-white rounded py-1.5 text-xs font-medium hover:bg-blue-700">
+                Create
+              </button>
+              <button type="button"
+                onClick={() => { setAddingAcct(false); setNewName('') }}
+                className="flex-1 border rounded py-1.5 text-xs hover:bg-gray-100">
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
 
       {loading && <p className="text-sm text-gray-400">Finding best match…</p>}
       {error   && <p className="text-sm text-red-500">{error}</p>}
