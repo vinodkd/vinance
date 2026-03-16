@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export default function TransferMatcherDrawer({ data, onClose }) {
   const { tx, onLinked } = data
@@ -11,6 +11,8 @@ export default function TransferMatcherDrawer({ data, onClose }) {
   const [newName,     setNewName]     = useState('')
   const [newType,     setNewType]     = useState('checking')
   const [newCurrency, setNewCurrency] = useState('USD')
+  const selectRef = useRef(null)
+  const newNameRef = useRef(null)
 
   const loadAccounts = useCallback(() =>
     window.api.listAccounts().then(accts =>
@@ -18,7 +20,18 @@ export default function TransferMatcherDrawer({ data, onClose }) {
     )
   , [tx.account_id])
 
-  useEffect(() => { loadAccounts() }, [loadAccounts])
+  useEffect(() => {
+    loadAccounts()
+    const t = setTimeout(() => selectRef.current?.focus(), 0)
+    return () => clearTimeout(t)
+  }, [loadAccounts])
+
+  useEffect(() => {
+    if (addingAcct) {
+      const t = setTimeout(() => newNameRef.current?.focus(), 0)
+      return () => clearTimeout(t)
+    }
+  }, [addingAcct])
 
   async function handleCreateAccount(e) {
     e.preventDefault()
@@ -94,10 +107,10 @@ export default function TransferMatcherDrawer({ data, onClose }) {
           )}
         </div>
         <select
+          ref={selectRef}
           value={targetAcct}
           onChange={e => setTargetAcct(e.target.value)}
           className="border rounded px-3 py-2"
-          autoFocus
         >
           <option value="">— Select account —</option>
           {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -107,7 +120,7 @@ export default function TransferMatcherDrawer({ data, onClose }) {
           <form onSubmit={handleCreateAccount}
                 className="border rounded p-3 bg-gray-50 flex flex-col gap-2 mt-1">
             <span className="text-xs font-medium text-gray-600">New account</span>
-            <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
+            <input ref={newNameRef} value={newName} onChange={e => setNewName(e.target.value)}
               placeholder="Account name" className="border rounded px-2 py-1.5 text-sm" />
             <select value={newType} onChange={e => setNewType(e.target.value)}
               className="border rounded px-2 py-1.5 text-sm">

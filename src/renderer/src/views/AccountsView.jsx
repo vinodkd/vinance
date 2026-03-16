@@ -107,7 +107,7 @@ export default function AccountsView() {
                   <form onSubmit={e => { e.preventDefault(); handleRename(acct.id, renaming.name) }}
                         className="flex gap-2 items-center">
                     <input
-                      autoFocus
+                      ref={el => el && setTimeout(() => el.focus(), 0)}
                       value={renaming.name}
                       onChange={e => setRenaming({ ...renaming, name: e.target.value })}
                       onBlur={() => handleRename(acct.id, renaming.name)}
