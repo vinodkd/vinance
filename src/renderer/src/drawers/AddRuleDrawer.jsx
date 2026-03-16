@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 
 export default function AddRuleDrawer({ data, onClose }) {
-  const [pattern, setPattern]     = useState(data?.prefill || '')
-  const [field, setField]         = useState('payee')
-  const [categoryId, setCategory] = useState('')
-  const [priority, setPriority]   = useState(0)
+  const editing = !!data?.id
+  const [pattern, setPattern]     = useState(data?.pattern || data?.prefill || '')
+  const [field, setField]         = useState(data?.field || 'memo')
+  const [categoryId, setCategory] = useState(data?.category_id ? String(data.category_id) : '')
+  const [priority, setPriority]   = useState(data?.priority ?? 0)
   const [categories, setCategories] = useState([])
 
   const [addingCat, setAddingCat]   = useState(false)
@@ -49,7 +50,11 @@ export default function AddRuleDrawer({ data, onClose }) {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!pattern.trim() || !categoryId) return
-    await window.api.createRule({ pattern: pattern.trim(), field, categoryId: Number(categoryId), priority: Number(priority) })
+    if (editing) {
+      await window.api.updateRule(data.id, { pattern: pattern.trim(), field, categoryId: Number(categoryId), priority: Number(priority) })
+    } else {
+      await window.api.createRule({ pattern: pattern.trim(), field, categoryId: Number(categoryId), priority: Number(priority) })
+    }
     await window.api.applyAllRules()
     data?.onCreated?.()
     onClose()
@@ -57,7 +62,7 @@ export default function AddRuleDrawer({ data, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-      <h2 className="text-lg font-semibold">Add Categorization Rule</h2>
+      <h2 className="text-lg font-semibold">{editing ? 'Edit Rule' : 'Add Categorization Rule'}</h2>
 
       <label className="flex flex-col gap-1 text-sm">
         Match field
@@ -151,7 +156,7 @@ export default function AddRuleDrawer({ data, onClose }) {
 
       <div className="flex gap-2 mt-auto">
         <button type="submit" className="flex-1 bg-blue-600 text-white rounded py-2 text-sm font-medium hover:bg-blue-700">
-          Create rule
+          {editing ? 'Save changes' : 'Create rule'}
         </button>
         <button type="button" onClick={onClose} className="flex-1 border rounded py-2 text-sm hover:bg-gray-50">
           Cancel

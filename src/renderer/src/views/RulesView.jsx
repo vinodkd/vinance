@@ -73,7 +73,13 @@ export default function RulesView() {
                 <td className="px-4 py-2 text-gray-500">{r.field}</td>
                 <td className="px-4 py-2">{r.category_path}</td>
                 <td className="px-4 py-2 text-gray-500 tabular-nums">{r.priority}</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 flex gap-3">
+                  <button
+                    onClick={() => { openDrawer('addRule', { ...r, onCreated: load }) }}
+                    className="text-blue-400 hover:text-blue-600 text-xs"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDelete(r.id)}
                     className="text-red-400 hover:text-red-600 text-xs"
