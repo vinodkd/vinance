@@ -227,6 +227,30 @@ export async function initDb(dbPath) {
     db.run('PRAGMA foreign_keys = ON')
   }
 
+  // Migration: expand rules.field CHECK to include 'any'
+  const rulesCheckOld = (() => {
+    const s = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='rules'")
+    s.step()
+    const row = s.getAsObject()
+    s.free()
+    return row?.sql || ''
+  })()
+  if (rulesCheckOld && !rulesCheckOld.includes("'any'")) {
+    db.run(`
+      CREATE TABLE rules_new (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        pattern     TEXT    NOT NULL,
+        field       TEXT    NOT NULL CHECK (field IN ('payee', 'memo', 'any')),
+        category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+        priority    INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+      )
+    `)
+    db.run(`INSERT INTO rules_new SELECT * FROM rules`)
+    db.run(`DROP TABLE rules`)
+    db.run(`ALTER TABLE rules_new RENAME TO rules`)
+  }
+
   persist()
 }
 
@@ -542,7 +566,9 @@ export const rules = {
     const apply = transaction((txs) => {
       for (const tx of txs) {
         for (const rule of ruleList) {
-          const haystack = (rule.field === 'payee' ? tx.payee : tx.memo) || ''
+          const haystack = rule.field === 'any'
+            ? `${tx.payee || ''} ${tx.memo || ''}`.trim()
+            : (rule.field === 'payee' ? tx.payee : tx.memo) || ''
           let matched = false
           try {
             matched = new RegExp(rule.pattern, 'i').test(haystack)

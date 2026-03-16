@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE TABLE IF NOT EXISTS rules (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   pattern     TEXT    NOT NULL,
-  field       TEXT    NOT NULL CHECK (field IN ('payee', 'memo')),
+  field       TEXT    NOT NULL CHECK (field IN ('payee', 'memo', 'any')),
   category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
   priority    INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT    NOT NULL DEFAULT (datetime('now'))

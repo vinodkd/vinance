@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 export default function AddRuleDrawer({ data, onClose }) {
   const editing = !!data?.id
   const [pattern, setPattern]     = useState(data?.pattern || data?.prefill || '')
-  const [field, setField]         = useState(data?.field || 'memo')
+  const [field, setField]         = useState(data?.field || 'any')
   const [categoryId, setCategory] = useState(data?.category_id ? String(data.category_id) : '')
   const [priority, setPriority]   = useState(data?.priority ?? 0)
   const [categories, setCategories] = useState([])
@@ -70,8 +70,9 @@ export default function AddRuleDrawer({ data, onClose }) {
       <label className="flex flex-col gap-1 text-sm">
         Match field
         <select value={field} onChange={e => setField(e.target.value)} className="border rounded px-3 py-2">
-          <option value="payee">Payee</option>
-          <option value="memo">Memo</option>
+          <option value="any">Payee or Memo</option>
+          <option value="payee">Payee only</option>
+          <option value="memo">Memo only</option>
         </select>
       </label>
 
