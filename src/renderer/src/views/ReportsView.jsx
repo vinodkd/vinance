@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -16,16 +16,15 @@ export default function ReportsView() {
   const [dateFrom, setDateFrom] = useState(DEFAULT_FROM)
   const [dateTo,   setDateTo]   = useState(DEFAULT_TO)
   const [summary,  setSummary]  = useState(null)
+  const [drillPath, setDrillPath] = useState([])
 
   const load = useCallback(() => {
     window.api.getReportSummary({ dateFrom, dateTo, accountIds: [] }).then(setSummary)
   }, [dateFrom, dateTo])
 
   useEffect(() => { load() }, [load])
-
-  function drillCategory(categoryId) {
-    navigate(`/transactions?categoryId=${categoryId}&dateFrom=${dateFrom}&dateTo=${dateTo}`)
-  }
+  // Reset drill when date range changes
+  useEffect(() => { setDrillPath([]) }, [dateFrom, dateTo])
 
   function drillPeriod(period) {
     const [year, month] = period.split('-')
@@ -34,10 +33,39 @@ export default function ReportsView() {
     navigate(`/transactions?dateFrom=${from}&dateTo=${to}`)
   }
 
-  const expenseCategories = (summary?.byCategory ?? [])
-    .filter(c => c.expense < 0)
-    .map(c => ({ ...c, expense: Math.abs(c.expense) }))
-    .sort((a, b) => b.expense - a.expense)
+  const expenseCategories = useMemo(() =>
+    (summary?.byCategory ?? [])
+      .filter(c => c.expense < 0)
+      .map(c => ({ ...c, expense: Math.abs(c.expense) }))
+  , [summary])
+
+  // Aggregate rows at current drill level
+  const currentSlices = useMemo(() => {
+    const prefix = drillPath.length ? drillPath.join('/') + '/' : ''
+    const depth  = drillPath.length + 1
+    const buckets = {}
+
+    for (const c of expenseCategories) {
+      const path = c.category_path || 'Uncategorized'
+      if (drillPath.length > 0 && !path.startsWith(prefix)) continue
+      const segments = path.split('/')
+      if (segments.length < depth) continue
+      const key   = segments.slice(0, depth).join('/')
+      const label = segments[depth - 1]
+      if (!buckets[key]) buckets[key] = { label, key, expense: 0, hasChildren: false, category_id: c.category_id }
+      buckets[key].expense += c.expense
+      if (segments.length > depth) buckets[key].hasChildren = true
+    }
+    return Object.values(buckets).sort((a, b) => b.expense - a.expense)
+  }, [expenseCategories, drillPath])
+
+  function handleSliceClick(slice) {
+    if (slice.hasChildren) {
+      setDrillPath(slice.key.split('/'))
+    } else {
+      navigate(`/transactions?categoryId=${slice.category_id}&dateFrom=${dateFrom}&dateTo=${dateTo}`)
+    }
+  }
 
   return (
     <div>
@@ -86,31 +114,54 @@ export default function ReportsView() {
           {/* Category breakdown */}
           <div className="grid grid-cols-2 gap-6">
             <section className="bg-white border rounded-lg p-4">
-              <h2 className="font-semibold mb-4">Expense by Category</h2>
-              <ResponsiveContainer width="100%" height={280}>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold">Expense by Category</h2>
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <button onClick={() => setDrillPath([])}
+                    className={`hover:text-blue-600 ${drillPath.length === 0 ? 'font-semibold text-gray-800' : ''}`}>
+                    All
+                  </button>
+                  {drillPath.map((seg, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                      <span className="text-gray-300">›</span>
+                      <button
+                        onClick={() => setDrillPath(drillPath.slice(0, i + 1))}
+                        className={`hover:text-blue-600 ${i === drillPath.length - 1 ? 'font-semibold text-gray-800' : ''}`}>
+                        {seg}
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
-                    data={expenseCategories}
+                    data={currentSlices}
                     dataKey="expense"
-                    nameKey="category_path"
+                    nameKey="label"
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
-                    onClick={d => d?.category_id && drillCategory(d.category_id)}
+                    onClick={handleSliceClick}
                     style={{ cursor: 'pointer' }}
                   >
-                    {expenseCategories.map((_, i) => (
+                    {currentSlices.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={v => fmtNum(v)} />
+                  <Tooltip formatter={(v, _, { payload }) =>
+                    [`${fmtNum(v)}${payload.hasChildren ? ' (click to expand)' : ''}`, payload.label]
+                  } />
                 </PieChart>
               </ResponsiveContainer>
-              <p className="text-xs text-gray-400 mt-1">Click a slice to see matching transactions.</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Click a slice to {drillPath.length > 0 ? 'drill in or ' : ''}see transactions.
+              </p>
             </section>
 
             <section className="bg-white border rounded-lg p-4">
-              <h2 className="font-semibold mb-4">Category Breakdown</h2>
+              <h2 className="font-semibold mb-3">Category Breakdown</h2>
               <div className="overflow-y-auto max-h-72">
                 <table className="w-full text-sm">
                   <thead className="text-xs text-gray-500 uppercase border-b">
@@ -120,13 +171,15 @@ export default function ReportsView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {expenseCategories.map(c => (
-                      <tr
-                        key={c.category_id}
-                        className="hover:bg-gray-50 cursor-pointer"
-                        onClick={() => drillCategory(c.category_id)}
-                      >
-                        <td className="py-1.5">{c.category_path || 'Uncategorized'}</td>
+                    {currentSlices.map((c, i) => (
+                      <tr key={c.key} className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handleSliceClick(c)}>
+                        <td className="py-1.5 flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ background: COLORS[i % COLORS.length] }} />
+                          {c.label}
+                          {c.hasChildren && <span className="text-gray-400 text-xs">›</span>}
+                        </td>
                         <td className="py-1.5 text-right tabular-nums text-red-600">{fmtNum(c.expense)}</td>
                       </tr>
                     ))}
