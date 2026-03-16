@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDrawer } from '../context/DrawerContext'
 
@@ -106,13 +106,11 @@ export default function AccountsView() {
                 {renaming?.id === acct.id ? (
                   <form onSubmit={e => { e.preventDefault(); handleRename(acct.id, renaming.name) }}
                         className="flex gap-2 items-center">
-                    <input
-                      ref={el => el && setTimeout(() => el.focus(), 0)}
+                    <RenameInput
                       value={renaming.name}
                       onChange={e => setRenaming({ ...renaming, name: e.target.value })}
                       onBlur={() => handleRename(acct.id, renaming.name)}
                       onKeyDown={e => e.key === 'Escape' && setRenaming(null)}
-                      className="border rounded px-2 py-0.5 text-sm font-medium w-48"
                     />
                   </form>
                 ) : (
@@ -153,6 +151,24 @@ export default function AccountsView() {
         </div>
       )}
     </div>
+  )
+}
+
+function RenameInput({ value, onChange, onBlur, onKeyDown }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const t = setTimeout(() => ref.current?.focus(), 50)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <input
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      className="border rounded px-2 py-0.5 text-sm font-medium w-48"
+    />
   )
 }
 

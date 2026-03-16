@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 
 const TYPES = ['checking', 'savings', 'credit']
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'INR']
@@ -7,12 +7,6 @@ export default function AddAccountDrawer({ onClose }) {
   const [name, setName]         = useState('')
   const [type, setType]         = useState('checking')
   const [currency, setCurrency] = useState('USD')
-  const nameRef = useRef(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => nameRef.current?.focus(), 0)
-    return () => clearTimeout(t)
-  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -29,7 +23,6 @@ export default function AddAccountDrawer({ onClose }) {
       <label className="flex flex-col gap-1 text-sm">
         Name
         <input
-          ref={nameRef}
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g. Chase Checking"

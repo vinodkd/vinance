@@ -11,7 +11,6 @@ export default function TransferMatcherDrawer({ data, onClose }) {
   const [newName,     setNewName]     = useState('')
   const [newType,     setNewType]     = useState('checking')
   const [newCurrency, setNewCurrency] = useState('USD')
-  const selectRef = useRef(null)
   const newNameRef = useRef(null)
 
   const loadAccounts = useCallback(() =>
@@ -20,15 +19,11 @@ export default function TransferMatcherDrawer({ data, onClose }) {
     )
   , [tx.account_id])
 
-  useEffect(() => {
-    loadAccounts()
-    const t = setTimeout(() => selectRef.current?.focus(), 0)
-    return () => clearTimeout(t)
-  }, [loadAccounts])
+  useEffect(() => { loadAccounts() }, [loadAccounts])
 
   useEffect(() => {
     if (addingAcct) {
-      const t = setTimeout(() => newNameRef.current?.focus(), 0)
+      const t = setTimeout(() => newNameRef.current?.focus(), 50)
       return () => clearTimeout(t)
     }
   }, [addingAcct])
@@ -113,7 +108,6 @@ export default function TransferMatcherDrawer({ data, onClose }) {
           )}
         </div>
         <select
-          ref={selectRef}
           value={targetAcct}
           onChange={e => setTargetAcct(e.target.value)}
           className="border rounded px-3 py-2"

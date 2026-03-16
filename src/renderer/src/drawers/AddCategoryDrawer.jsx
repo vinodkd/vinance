@@ -1,15 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function AddCategoryDrawer({ data, onClose }) {
   const [name, setName] = useState('')
   const [parentId, setParentId] = useState(data?.parentId ?? '')
   const [categories, setCategories] = useState([])
-  const nameRef = useRef(null)
 
   useEffect(() => {
     window.api.getCategoryFlat().then(setCategories)
-    const t = setTimeout(() => nameRef.current?.focus(), 0)
-    return () => clearTimeout(t)
   }, [])
 
   async function handleSubmit(e) {
@@ -27,7 +24,6 @@ export default function AddCategoryDrawer({ data, onClose }) {
       <label className="flex flex-col gap-1 text-sm">
         Name
         <input
-          ref={nameRef}
           value={name}
           onChange={e => setName(e.target.value)}
           className="border rounded px-3 py-2"

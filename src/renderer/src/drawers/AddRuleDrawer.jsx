@@ -11,7 +11,6 @@ export default function AddRuleDrawer({ data, onClose }) {
   const [addingCat, setAddingCat]   = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [newCatParent, setNewCatParent] = useState('')
-  const patternRef = useRef(null)
   const newCatInputRef = useRef(null)
 
   const loadCategories = () => window.api.getCategoryFlat().then(setCategories)
@@ -19,16 +18,12 @@ export default function AddRuleDrawer({ data, onClose }) {
   useEffect(() => {
     loadCategories()
     window.addEventListener('vinance:categories:changed', loadCategories)
-    const t = setTimeout(() => patternRef.current?.focus(), 0)
-    return () => {
-      window.removeEventListener('vinance:categories:changed', loadCategories)
-      clearTimeout(t)
-    }
+    return () => window.removeEventListener('vinance:categories:changed', loadCategories)
   }, [])
 
   useEffect(() => {
     if (addingCat) {
-      const t = setTimeout(() => newCatInputRef.current?.focus(), 0)
+      const t = setTimeout(() => newCatInputRef.current?.focus(), 50)
       return () => clearTimeout(t)
     }
   }, [addingCat])
@@ -83,7 +78,6 @@ export default function AddRuleDrawer({ data, onClose }) {
       <label className="flex flex-col gap-1 text-sm">
         Pattern (substring or regex)
         <input
-          ref={patternRef}
           value={pattern}
           onChange={e => setPattern(e.target.value)}
           className="border rounded px-3 py-2 font-mono"
