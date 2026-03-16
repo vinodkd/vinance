@@ -22,8 +22,9 @@ CREATE TABLE IF NOT EXISTS transactions (
   memo             TEXT,
   raw_type         TEXT,              -- DEBIT / CREDIT / etc from OFX
   category_id      INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-  is_transfer      INTEGER NOT NULL DEFAULT 0,
-  transfer_pair_id INTEGER REFERENCES transactions(id) ON DELETE SET NULL,
+  is_transfer         INTEGER NOT NULL DEFAULT 0,
+  transfer_pair_id    INTEGER REFERENCES transactions(id) ON DELETE SET NULL,
+  transfer_account_id INTEGER REFERENCES accounts(id)    ON DELETE SET NULL,
   imported_at      TEXT    NOT NULL DEFAULT (datetime('now')),
   UNIQUE (account_id, fitid)
 );

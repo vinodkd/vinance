@@ -106,7 +106,9 @@ export default function TransactionsView() {
                 <td className="px-4 py-2 text-gray-500">{tx.memo || ''}</td>
                 <td className="px-4 py-2">
                   {tx.is_transfer ? (
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Transfer</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${tx.transfer_pair_id ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {tx.transfer_pair_id ? 'Transfer' : 'Transfer (pending)'}
+                    </span>
                   ) : (
                     <select
                       value={tx.category_id || ''}

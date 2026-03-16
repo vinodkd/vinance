@@ -154,6 +154,15 @@ export async function initDb(dbPath) {
     db.run('PRAGMA foreign_keys = ON')
   }
 
+  // Migration: add transfer_account_id for pending (unmatched) transfers
+  const txCols = []
+  const txColStmt = db.prepare('PRAGMA table_info(transactions)')
+  while (txColStmt.step()) txCols.push(txColStmt.getAsObject().name)
+  txColStmt.free()
+  if (!txCols.includes('transfer_account_id')) {
+    db.run('ALTER TABLE transactions ADD COLUMN transfer_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL')
+  }
+
   persist()
 }
 
@@ -290,11 +299,48 @@ export const transactions = {
   unlinkTransfer(id) {
     const tx = prepare('SELECT transfer_pair_id FROM transactions WHERE id = ?').get(id)
     transaction(() => {
-      prepare('UPDATE transactions SET is_transfer = 0, transfer_pair_id = NULL WHERE id = ?').run(id)
+      prepare('UPDATE transactions SET is_transfer = 0, transfer_pair_id = NULL, transfer_account_id = NULL WHERE id = ?').run(id)
       if (tx?.transfer_pair_id) {
-        prepare('UPDATE transactions SET is_transfer = 0, transfer_pair_id = NULL WHERE id = ?').run(tx.transfer_pair_id)
+        prepare('UPDATE transactions SET is_transfer = 0, transfer_pair_id = NULL, transfer_account_id = NULL WHERE id = ?').run(tx.transfer_pair_id)
       }
     })()
+  },
+
+  markPendingTransfer(id, accountId) {
+    prepare(
+      'UPDATE transactions SET is_transfer = 1, transfer_pair_id = NULL, transfer_account_id = ? WHERE id = ?'
+    ).run(accountId, id)
+  },
+
+  // Called after import — tries to link pending transfers with newly imported transactions
+  reconcilePendingTransfers(accountId) {
+    const pending = prepare(`
+      SELECT * FROM transactions
+      WHERE is_transfer = 1 AND transfer_pair_id IS NULL AND transfer_account_id = ?
+    `).all(accountId)
+
+    let linked = 0
+    for (const p of pending) {
+      // Find best match in the target account: opposite amount, within 5 days
+      const match = prepare(`
+        SELECT * FROM transactions
+        WHERE account_id = ?
+          AND amount = ?
+          AND is_transfer = 0
+          AND ABS(JULIANDAY(date) - JULIANDAY(?)) <= 5
+        ORDER BY ABS(JULIANDAY(date) - JULIANDAY(?))
+        LIMIT 1
+      `).get(accountId, -p.amount, p.date, p.date)
+
+      if (match) {
+        transaction(() => {
+          prepare('UPDATE transactions SET is_transfer = 1, transfer_pair_id = ?, transfer_account_id = NULL WHERE id = ?').run(match.id, p.id)
+          prepare('UPDATE transactions SET is_transfer = 1, transfer_pair_id = ?, transfer_account_id = NULL WHERE id = ?').run(p.id, match.id)
+        })()
+        linked++
+      }
+    }
+    return linked
   }
 }
 

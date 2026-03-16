@@ -26,8 +26,9 @@ contextBridge.exposeInMainWorld('api', {
   // Transactions
   listTransactions: (opts)         => ipcRenderer.invoke('transactions:list', opts),
   setCategory:      (id, catId)    => ipcRenderer.invoke('transactions:set-category', id, catId),
-  linkTransfer:     (id1, id2)     => ipcRenderer.invoke('transfers:link', id1, id2),
-  unlinkTransfer:   (id)           => ipcRenderer.invoke('transfers:unlink', id),
+  linkTransfer:        (id1, id2)  => ipcRenderer.invoke('transfers:link', id1, id2),
+  unlinkTransfer:      (id)        => ipcRenderer.invoke('transfers:unlink', id),
+  markPendingTransfer: (id, acctId)=> ipcRenderer.invoke('transfers:mark-pending', id, acctId),
 
   // Categories
   getCategoryTree:  ()             => ipcRenderer.invoke('categories:tree'),

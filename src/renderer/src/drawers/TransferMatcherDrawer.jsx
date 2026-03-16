@@ -46,6 +46,12 @@ export default function TransferMatcherDrawer({ data, onClose }) {
     onClose()
   }
 
+  async function handleMarkPending() {
+    await window.api.markPendingTransfer(tx.id, Number(targetAcct))
+    onLinked?.()
+    onClose()
+  }
+
   return (
     <div className="p-6 flex flex-col gap-4">
       <h2 className="text-lg font-semibold">Mark as Transfer</h2>
@@ -77,36 +83,36 @@ export default function TransferMatcherDrawer({ data, onClose }) {
       {error   && <p className="text-sm text-red-500">{error}</p>}
 
       {match && (
-        <>
-          <div className="border rounded p-3 text-sm bg-white">
-            <div className="text-xs text-gray-500 uppercase mb-1">Best match found</div>
-            <div className="font-medium">{match.payee || match.memo || '—'}</div>
-            <div className="text-gray-500">{match.date}</div>
-            <div className={`font-semibold tabular-nums ${match.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>
-              {fmtAmt(match.amount, match.currency)}
-            </div>
+        <div className="border rounded p-3 text-sm bg-white">
+          <div className="text-xs text-gray-500 uppercase mb-1">Best match found</div>
+          <div className="font-medium">{match.payee || match.memo || '—'}</div>
+          <div className="text-gray-500">{match.date}</div>
+          <div className={`font-semibold tabular-nums ${match.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>
+            {fmtAmt(match.amount, match.currency)}
           </div>
+        </div>
+      )}
 
-          <div className="flex gap-2">
+      {targetAcct && !loading && (
+        <div className="flex flex-col gap-2">
+          {match && (
             <button
               onClick={handleConfirm}
-              className="flex-1 bg-blue-600 text-white rounded py-2 text-sm font-medium hover:bg-blue-700"
+              className="bg-blue-600 text-white rounded py-2 text-sm font-medium hover:bg-blue-700"
             >
               Confirm link
             </button>
-            <button
-              onClick={onClose}
-              className="flex-1 border rounded py-2 text-sm hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </>
+          )}
+          <button
+            onClick={handleMarkPending}
+            className="border border-amber-400 text-amber-700 rounded py-2 text-sm hover:bg-amber-50"
+          >
+            {match ? 'Mark as pending instead (reconcile on next import)' : 'No match yet — mark as pending transfer'}
+          </button>
+          <button onClick={onClose} className="border rounded py-2 text-sm hover:bg-gray-50">Cancel</button>
+        </div>
       )}
 
-      {!match && !loading && targetAcct && !error && (
-        <button onClick={onClose} className="border rounded py-2 text-sm hover:bg-gray-50">Cancel</button>
-      )}
       {!targetAcct && (
         <button onClick={onClose} className="border rounded py-2 text-sm hover:bg-gray-50">Cancel</button>
       )}

@@ -21,6 +21,12 @@ export default function AccountsView() {
     return () => window.removeEventListener('vinance:accounts:changed', load)
   }, [load])
 
+  async function handleDelete(acct) {
+    if (!confirm(`Delete "${acct.name}" and all its transactions? This cannot be undone.`)) return
+    await window.api.deleteAccount(acct.id)
+    load()
+  }
+
   async function handleRename(id, name) {
     if (!name.trim()) return
     await window.api.renameAccount(id, name.trim())
@@ -34,7 +40,9 @@ export default function AccountsView() {
     setImporting(accountId ?? 'new')
     try {
       const result = await window.api.importFile(filePath, accountId)
-      alert(`Imported ${result.imported} transactions (${result.skipped} duplicates skipped).`)
+      const msg = [`Imported ${result.imported} transactions (${result.skipped} duplicates skipped).`]
+      if (result.reconciled > 0) msg.push(`${result.reconciled} pending transfer${result.reconciled > 1 ? 's' : ''} auto-linked.`)
+      alert(msg.join('\n'))
       load()
     } catch (err) {
       alert(`Import failed: ${err.message}`)
@@ -132,6 +140,12 @@ export default function AccountsView() {
                   className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
                 >
                   {importing === acct.id ? 'Importing…' : 'Import more'}
+                </button>
+                <button
+                  onClick={() => handleDelete(acct)}
+                  className="text-sm text-red-400 hover:text-red-600 border border-red-200 rounded px-3 py-1.5 hover:bg-red-50"
+                >
+                  Delete
                 </button>
               </div>
             </div>

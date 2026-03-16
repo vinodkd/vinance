@@ -167,6 +167,9 @@ export function registerIpcHandlers() {
     // Auto-categorize newly imported transactions
     rules.applyAll()
 
+    // Auto-reconcile any pending transfers pointing at this account
+    const reconciled = transactions.reconcilePendingTransfers(account.id)
+
     imports.log({
       accountId: account.id,
       filename: basename(filePath),
@@ -174,7 +177,7 @@ export function registerIpcHandlers() {
       skippedCount: skipped
     })
 
-    return { imported, skipped, accountId: account.id }
+    return { imported, skipped, accountId: account.id, reconciled }
   })
 
   // ── Accounts ───────────────────────────────────────────────────────────────
@@ -190,6 +193,7 @@ export function registerIpcHandlers() {
   ipcMain.handle('transactions:set-category', (_e, id, categoryId) => transactions.setCategory(id, categoryId))
   ipcMain.handle('transfers:link',            (_e, id1, id2) => transactions.linkTransfer(id1, id2))
   ipcMain.handle('transfers:unlink',          (_e, id) => transactions.unlinkTransfer(id))
+  ipcMain.handle('transfers:mark-pending',    (_e, id, accountId) => transactions.markPendingTransfer(id, accountId))
 
   // ── Categories ─────────────────────────────────────────────────────────────
 
