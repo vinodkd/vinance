@@ -21,7 +21,14 @@ contextBridge.exposeInMainWorld('api', {
   listAccounts:     ()             => ipcRenderer.invoke('accounts:list'),
   createAccount:    (data)         => ipcRenderer.invoke('accounts:create', data),
   renameAccount:    (id, name)     => ipcRenderer.invoke('accounts:rename', id, name),
+  setAccountGroup:  (id, groupId)  => ipcRenderer.invoke('accounts:set-group', id, groupId),
   deleteAccount:    (id)           => ipcRenderer.invoke('accounts:delete', id),
+
+  // Account groups
+  listGroups:   ()           => ipcRenderer.invoke('groups:list'),
+  createGroup:  (name)       => ipcRenderer.invoke('groups:create', name),
+  renameGroup:  (id, name)   => ipcRenderer.invoke('groups:rename', id, name),
+  deleteGroup:  (id)         => ipcRenderer.invoke('groups:delete', id),
 
   // Transactions
   listTransactions: (opts)         => ipcRenderer.invoke('transactions:list', opts),

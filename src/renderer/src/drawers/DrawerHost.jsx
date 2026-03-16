@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react'
 import { useDrawer } from '../context/DrawerContext'
 import AddAccountDrawer from './AddAccountDrawer'
 import AddCategoryDrawer from './AddCategoryDrawer'
+import AddGroupDrawer from './AddGroupDrawer'
 import AddRuleDrawer from './AddRuleDrawer'
 import SwitchPortfolioDrawer from './SwitchPortfolioDrawer'
 import TransferMatcherDrawer from './TransferMatcherDrawer'
@@ -10,6 +11,7 @@ import TransferMatcherDrawer from './TransferMatcherDrawer'
 const DRAWERS = {
   addAccount:       AddAccountDrawer,
   addCategory:      AddCategoryDrawer,
+  addGroup:         AddGroupDrawer,
   addRule:          AddRuleDrawer,
   switchPortfolio:  SwitchPortfolioDrawer,
   transferMatcher:  TransferMatcherDrawer,

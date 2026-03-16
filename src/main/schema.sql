@@ -1,5 +1,12 @@
+CREATE TABLE IF NOT EXISTS account_groups (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT    NOT NULL UNIQUE,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS accounts (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id    INTEGER REFERENCES account_groups(id) ON DELETE SET NULL,
   name        TEXT    NOT NULL,
   currency    TEXT    NOT NULL DEFAULT 'USD',
   type        TEXT    NOT NULL DEFAULT 'checking',

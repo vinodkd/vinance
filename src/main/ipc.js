@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'fs'
 import { basename, join } from 'path'
 import { homedir } from 'os'
 import { parse as parseOfx } from 'ofx-js'
-import { accounts, transactions, categories, rules, imports, reports, budgets, initDb, getCurrentDbPath } from './db.js'
+import { accounts, accountGroups, transactions, categories, rules, imports, reports, budgets, initDb, getCurrentDbPath } from './db.js'
 import { listPortfolios, addPortfolio, setDefault, removePortfolio, getPortfolioName, touchPortfolio } from './portfolios.js'
 
 export function registerIpcHandlers() {
@@ -183,10 +183,16 @@ export function registerIpcHandlers() {
 
   // ── Accounts ───────────────────────────────────────────────────────────────
 
-  ipcMain.handle('accounts:list',   () => accounts.list())
-  ipcMain.handle('accounts:create', (_e, data) => accounts.create(data))
-  ipcMain.handle('accounts:rename',  (_e, id, name) => accounts.rename(id, name))
-  ipcMain.handle('accounts:delete',  (_e, id) => accounts.delete(id))
+  ipcMain.handle('accounts:list',      () => accounts.list())
+  ipcMain.handle('accounts:create',    (_e, data) => accounts.create(data))
+  ipcMain.handle('accounts:rename',    (_e, id, name) => accounts.rename(id, name))
+  ipcMain.handle('accounts:set-group', (_e, id, groupId) => accounts.setGroup(id, groupId))
+  ipcMain.handle('accounts:delete',    (_e, id) => accounts.delete(id))
+
+  ipcMain.handle('groups:list',   () => accountGroups.list())
+  ipcMain.handle('groups:create', (_e, name) => accountGroups.create(name))
+  ipcMain.handle('groups:rename', (_e, id, name) => accountGroups.rename(id, name))
+  ipcMain.handle('groups:delete', (_e, id) => accountGroups.delete(id))
 
   // ── Transactions ───────────────────────────────────────────────────────────
 

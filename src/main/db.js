@@ -163,6 +163,26 @@ export async function initDb(dbPath) {
     db.run('ALTER TABLE transactions ADD COLUMN transfer_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL')
   }
 
+  // Migration: add account_groups table and group_id on accounts
+  const tables = []
+  const tblStmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table'")
+  while (tblStmt.step()) tables.push(tblStmt.getAsObject().name)
+  tblStmt.free()
+  if (!tables.includes('account_groups')) {
+    db.run(`CREATE TABLE account_groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    )`)
+  }
+  const acctCols = []
+  const acctColStmt = db.prepare('PRAGMA table_info(accounts)')
+  while (acctColStmt.step()) acctCols.push(acctColStmt.getAsObject().name)
+  acctColStmt.free()
+  if (!acctCols.includes('group_id')) {
+    db.run('ALTER TABLE accounts ADD COLUMN group_id INTEGER REFERENCES account_groups(id) ON DELETE SET NULL')
+  }
+
   // Migration: make fitid nullable to allow synthetic mirror transactions
   // SQLite can't ALTER COLUMN, so we recreate the table if the old NOT NULL constraint exists.
   const fitidInfo = (() => {
@@ -238,15 +258,33 @@ function categoryDescendantIds(categoryId) {
 
 // ── Accounts ──────────────────────────────────────────────────────────────────
 
+export const accountGroups = {
+  list() {
+    return prepare('SELECT * FROM account_groups ORDER BY sort_order, name').all()
+  },
+  create(name) {
+    prepare('INSERT INTO account_groups (name) VALUES (?)').run(name)
+    return { id: lastInsertRowid(), name }
+  },
+  rename(id, name) {
+    prepare('UPDATE account_groups SET name = ? WHERE id = ?').run(name, id)
+  },
+  delete(id) {
+    prepare('UPDATE accounts SET group_id = NULL WHERE group_id = ?').run(id)
+    prepare('DELETE FROM account_groups WHERE id = ?').run(id)
+  }
+}
+
 export const accounts = {
   list() {
     return prepare(`
-      SELECT a.*,
+      SELECT a.*, ag.name AS group_name,
              COALESCE(SUM(CASE WHEN t.is_transfer = 0 THEN t.amount ELSE 0 END), 0) AS balance
       FROM accounts a
+      LEFT JOIN account_groups ag ON ag.id = a.group_id
       LEFT JOIN transactions t ON t.account_id = a.id
       GROUP BY a.id
-      ORDER BY a.name
+      ORDER BY ag.sort_order NULLS LAST, ag.name NULLS LAST, a.name
     `).all()
   },
   create({ name, currency, type }) {
@@ -261,6 +299,9 @@ export const accounts = {
   },
   findByBankInfo(bankId, acctId) {
     return prepare("SELECT * FROM accounts WHERE name LIKE ? LIMIT 1").get(`%${acctId}%`)
+  },
+  setGroup(id, groupId) {
+    prepare('UPDATE accounts SET group_id = ? WHERE id = ?').run(groupId || null, id)
   },
   delete(id) {
     prepare('DELETE FROM imports      WHERE account_id = ?').run(id)
